@@ -1,0 +1,564 @@
+{
+  "version": "1.0",
+  "gameId": "mvp_dual_scenarios",
+  "roles": [
+    {
+      "id": "builder",
+      "name": "Builder",
+      "tagline": "Fixes systems and restores function.",
+      "sees": ["diagrams", "componentLabels", "systemStates"],
+      "abilities": [
+        {
+          "id": "applyConfiguration",
+          "description": "Can apply a system configuration step (breakers/routing)."
+        }
+      ],
+      "startingFlavor": ["Power room", "Junction box", "Hardware bay"]
+    },
+    {
+      "id": "pathfinder",
+      "name": "Pathfinder",
+      "tagline": "Navigates routes and commits team choices.",
+      "sees": ["maps", "routeConstraints", "dangerWarnings"],
+      "abilities": [
+        {
+          "id": "commitChoice",
+          "description": "Can commit the team's route choice (or start a vote)."
+        }
+      ],
+      "startingFlavor": ["Corridor map console", "Route planner", "Door network panel"]
+    },
+    {
+      "id": "decoder",
+      "name": "Decoder",
+      "tagline": "Interprets clues, patterns, and logs.",
+      "sees": ["logs", "hiddenText", "partialCodes"],
+      "abilities": [
+        {
+          "id": "analyzeClue",
+          "description": "Can reveal metadata hint on a clue once per node."
+        }
+      ],
+      "startingFlavor": ["Terminal", "Archive", "Sonar/log station"]
+    },
+    {
+      "id": "coordinator",
+      "name": "Coordinator",
+      "tagline": "Manages risk, resources, and stabilization.",
+      "sees": ["globalMeters", "penaltyPreview"],
+      "abilities": [
+        {
+          "id": "stabilize",
+          "description": "Once per scenario, reduce the next penalty by 50%."
+        }
+      ],
+      "startingFlavor": ["Ops station", "Life support", "Security overview"]
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "submarine_escape",
+      "title": "The Sinking Submarine",
+      "description": "Escape from one end of a flooding submarine to the hatch before oxygen runs out.",
+      "globals": {
+        "timerSeconds": 1800,
+        "vars": {
+          "oxygen": 100,
+          "water": 0,
+          "doorAUnlocked": false,
+          "hatchUnlocked": false,
+          "tookVentTrap": false
+        },
+        "failConditions": [
+          { "type": "lte", "var": "oxygen", "value": 0, "reason": "You suffocated." },
+          { "type": "gte", "var": "water", "value": 100, "reason": "The submarine fully flooded." },
+          { "type": "timerExpired", "reason": "You ran out of time." }
+        ]
+      },
+      "startNodeId": "A1",
+      "nodes": [
+        {
+          "id": "A1",
+          "type": "puzzle_node",
+          "location": "Wake Alarm Bay",
+          "story": {
+            "title": "Wake to Red Lights",
+            "text": "Alarms scream. Water sloshes at your boots. Oxygen is dropping fast. The hatch is across the submarine.",
+            "narrationText": "Red emergency lights pulse. You taste metal in the air. The hatch is far."
+          },
+          "roleClues": [
+            {
+              "roleId": "pathfinder",
+              "text": "Map console: Corridor route is safer but longer. Vent route is shorter but unstable."
+            },
+            {
+              "roleId": "builder",
+              "text": "Breaker panel note: 'Start AUX → MAIN → DOOR BUS. If MAIN is first, it trips.'"
+            }
+          ],
+          "puzzles": [
+            {
+              "id": "A1_P1",
+              "type": "choice",
+              "prompt": "Set the breaker sequence to restore minimal power.",
+              "options": [
+                { "id": "opt1", "label": "AUX → MAIN → DOOR BUS", "isCorrect": true },
+                { "id": "opt2", "label": "MAIN → AUX → DOOR BUS", "isCorrect": false },
+                { "id": "opt3", "label": "DOOR BUS → AUX → MAIN", "isCorrect": false }
+              ],
+              "effectsOnSuccess": [
+                { "op": "add", "var": "water", "value": -3 },
+                { "op": "add", "var": "oxygen", "value": 0 }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "oxygen", "value": -8 },
+                { "op": "add", "var": "water", "value": 10 }
+              ]
+            }
+          ],
+          "nextNodeId": "A2"
+        },
+        {
+          "id": "A2",
+          "type": "puzzle_node",
+          "location": "Power Relay Room",
+          "story": {
+            "title": "Restore Door Power",
+            "text": "Door A needs stable 12V. You can use the embedded circuit sim to tune it.",
+            "narrationText": "You find the relay box. The door needs clean power—now."
+          },
+          "puzzles": [
+            {
+              "id": "A2_P1",
+              "type": "embed_validator",
+              "embed": {
+                "kind": "phet",
+                "url": "https://phet.colorado.edu/",
+                "instructions": "Use the sim to set the circuit so the output is about 12V and current is under the safe limit."
+              },
+              "validator": {
+                "fields": [
+                  { "id": "vout", "label": "Measured Vout (V)", "type": "number", "target": 12.0, "tolerance": 0.5 },
+                  { "id": "current", "label": "Measured Current (A)", "type": "number", "max": 0.30 }
+                ]
+              },
+              "effectsOnSuccess": [
+                { "op": "set", "var": "doorAUnlocked", "value": true },
+                { "op": "add", "var": "water", "value": -5 }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "water", "value": 15 }
+              ]
+            }
+          ],
+          "nextNodeId": "A3"
+        },
+        {
+          "id": "A3",
+          "type": "puzzle_node",
+          "location": "Pressure Hatch Corridor",
+          "story": {
+            "title": "The Hatch Needs a Code",
+            "text": "A pressure hatch blocks the corridor. A sonar beacon pattern is blinking on a panel.",
+            "narrationText": "A steel hatch looms ahead. A small panel blinks in a repeating pattern."
+          },
+          "roleClues": [
+            {
+              "roleId": "decoder",
+              "text": "Sonar pattern: long-long-short-short / short-long-short-long. Note: long=2, short=1. Read pairs."
+            },
+            {
+              "roleId": "pathfinder",
+              "text": "Keypad format: 4 digits. Hint: 'Pairs form digits, left to right.'"
+            }
+          ],
+          "puzzles": [
+            {
+              "id": "A3_P1",
+              "type": "input_code",
+              "prompt": "Enter the 4-digit hatch code.",
+              "validation": { "mode": "exact", "answer": "2212" },
+              "attemptsAllowed": 3,
+              "effectsOnSuccess": [
+                { "op": "set", "var": "hatchUnlocked", "value": true }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "oxygen", "value": -6 }
+              ]
+            }
+          ],
+          "nextNodeId": "A4"
+        },
+        {
+          "id": "A4",
+          "type": "puzzle_node",
+          "location": "Flooded Junction Box",
+          "story": {
+            "title": "Door Controller Is Glitched",
+            "text": "The door controller script is miscounting. Fix the tiny bug to stop the water surge valve from cycling.",
+            "narrationText": "A controller sparks. The valve cycles wildly—feeding the flood."
+          },
+          "puzzles": [
+            {
+              "id": "A4_P1",
+              "type": "debug_select",
+              "prompt": "Pick the correct one-line fix. (Boilerplate provided.)",
+              "code": {
+                "language": "js",
+                "boilerplate": "function openAfterNSeconds(n) {\n  let t = 0;\n  while (t <= n) {\n    t = t + 1;\n  }\n  return t === n; // should be true exactly when the loop reached n seconds\n}\n",
+                "question": "The function should return true when exactly n seconds passed. Choose the best fix."
+              },
+              "options": [
+                { "id": "fix1", "label": "Change `while (t <= n)` to `while (t < n)`", "isCorrect": true },
+                { "id": "fix2", "label": "Change `t = t + 1` to `t = t + 2`", "isCorrect": false },
+                { "id": "fix3", "label": "Change `return t === n` to `return t >= n`", "isCorrect": false }
+              ],
+              "effectsOnSuccess": [
+                { "op": "add", "var": "water", "value": -10 }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "water", "value": 12 }
+              ]
+            }
+          ],
+          "nextNodeId": "A5"
+        },
+        {
+          "id": "A5",
+          "type": "choice_node",
+          "location": "Vent Fork",
+          "story": {
+            "title": "Two Routes",
+            "text": "You can take the crew corridor, or crawl through a maintenance vent shortcut.",
+            "narrationText": "Two paths. One feels safe. One feels fast."
+          },
+          "choices": [
+            {
+              "id": "A5_C1",
+              "label": "Take Crew Corridor (recommended)",
+              "nextNodeId": "A6"
+            },
+            {
+              "id": "A5_C2",
+              "label": "Take Maintenance Vent (shortcut)",
+              "nextNodeId": "A_RH1",
+              "effects": [{ "op": "set", "var": "tookVentTrap", "value": true }]
+            }
+          ]
+        },
+        {
+          "id": "A_RH1",
+          "type": "puzzle_node",
+          "location": "Vent Trap",
+          "story": {
+            "title": "Vent Collapse",
+            "text": "The vent bends and collapses. Water surges in. You scramble back, losing time and air.",
+            "narrationText": "Metal shrieks. The vent buckles. Cold water punches into the tunnel."
+          },
+          "puzzles": [],
+          "autoEffects": [
+            { "op": "add", "var": "water", "value": 25 },
+            { "op": "add", "var": "oxygen", "value": -10 }
+          ],
+          "nextNodeId": "A5"
+        },
+        {
+          "id": "A6",
+          "type": "puzzle_node",
+          "location": "Final Escape Lock",
+          "story": {
+            "title": "Final Lock",
+            "text": "The final hatch requires two inputs: a power checksum and the hatch code fragment. Combine them to escape.",
+            "narrationText": "Your last barrier. A keypad, a power check, and your life on the line."
+          },
+          "roleClues": [
+            {
+              "roleId": "builder",
+              "text": "Power checksum hint: If Door A was stabilized, checksum = 7. If not, checksum = 3."
+            },
+            {
+              "roleId": "decoder",
+              "text": "From earlier: hatch code was 2212. Use last two digits as fragment."
+            }
+          ],
+          "puzzles": [
+            {
+              "id": "A6_P1",
+              "type": "input_code",
+              "prompt": "Enter final escape code (format: X-YY).",
+              "validation": {
+                "mode": "computed",
+                "expression": "`${doorAUnlocked ? 7 : 3}-${'2212'.slice(2)}`",
+                "example": "7-12"
+              },
+              "effectsOnSuccess": [],
+              "effectsOnFail": [
+                { "op": "add", "var": "water", "value": 15 },
+                { "op": "add", "var": "oxygen", "value": -10 }
+              ]
+            }
+          ],
+          "nextNodeId": "A_WIN"
+        },
+        {
+          "id": "A_WIN",
+          "type": "win_node",
+          "location": "Ocean Surface",
+          "story": {
+            "title": "You Escaped",
+            "text": "The hatch opens. You burst into air and light. You did it — together.",
+            "narrationText": "The hatch releases. You rise—alive."
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "ai_dystopia",
+      "title": "The AI Monopoly",
+      "description": "Infiltrate a hostile system, avoid honeytraps, reduce alert, and shut the AI down using safe simulated puzzles.",
+      "globals": {
+        "vars": {
+          "alert": 0,
+          "attemptsLeft": 4,
+          "routeSafe": false,
+          "cameraLoopFixed": false,
+          "keyRuleUnlocked": false,
+          "correctKey": "MH-7Q2-AX",
+          "honeytrapped": false
+        },
+        "failConditions": [
+          { "type": "gte", "var": "alert", "value": 100, "reason": "The AI traced you and terminated the team." },
+          { "type": "lte", "var": "attemptsLeft", "value": 0, "reason": "Too many failed attempts. The AI locked down and caught you." }
+        ]
+      },
+      "startNodeId": "B1",
+      "nodes": [
+        {
+          "id": "B1",
+          "type": "choice_node",
+          "location": "Infiltration Entry",
+          "story": {
+            "title": "Choose Your Entry Route",
+            "text": "You reach the perimeter. Two corridors: one dim, one perfectly lit. The AI loves perfect things.",
+            "narrationText": "Two corridors. One looks safe. One looks like a trap."
+          },
+          "roleClues": [
+            {
+              "roleId": "decoder",
+              "text": "Intercepted hint: 'Honeytraps are over-lit and too silent.'"
+            }
+          ],
+          "choices": [
+            {
+              "id": "B1_C1",
+              "label": "Dim service corridor",
+              "nextNodeId": "B2",
+              "effects": [{ "op": "set", "var": "routeSafe", "value": true }]
+            },
+            {
+              "id": "B1_C2",
+              "label": "Perfectly lit corridor (shortcut)",
+              "nextNodeId": "B_RH1",
+              "effects": [{ "op": "set", "var": "honeytrapped", "value": true }]
+            }
+          ]
+        },
+        {
+          "id": "B_RH1",
+          "type": "puzzle_node",
+          "location": "Honeytrap Hall",
+          "story": {
+            "title": "Too Quiet",
+            "text": "The hallway closes behind you. A friendly prompt offers 'Admin Override'. It feels wrong.",
+            "narrationText": "A door clicks shut. The air gets colder. A screen smiles at you."
+          },
+          "autoEffects": [
+            { "op": "add", "var": "alert", "value": 35 }
+          ],
+          "nextNodeId": "B1"
+        },
+        {
+          "id": "B2",
+          "type": "puzzle_node",
+          "location": "Camera Loop Panel",
+          "story": {
+            "title": "Blind the Cameras",
+            "text": "A tiny bug is preventing the camera loop from syncing. Fix it to reduce alert growth.",
+            "narrationText": "You find a camera loop panel. One small fix could buy you time."
+          },
+          "puzzles": [
+            {
+              "id": "B2_P1",
+              "type": "debug_select",
+              "prompt": "Pick the correct small fix. (Boilerplate provided.)",
+              "code": {
+                "language": "js",
+                "boilerplate": "function everySecond(fn) {\n  // should call fn exactly once per second\n  for (let i = 0; i <= 5; i++) {\n    setTimeout(fn(), i * 1000);\n  }\n}\n",
+                "question": "This currently calls fn immediately. Choose the best fix."
+              },
+              "options": [
+                { "id": "fix1", "label": "Change `setTimeout(fn(), ...)` to `setTimeout(fn, ...)`", "isCorrect": true },
+                { "id": "fix2", "label": "Change `i * 1000` to `i * 500`", "isCorrect": false },
+                { "id": "fix3", "label": "Change `i <= 5` to `i < 5`", "isCorrect": false }
+              ],
+              "effectsOnSuccess": [
+                { "op": "set", "var": "cameraLoopFixed", "value": true },
+                { "op": "add", "var": "alert", "value": -10 }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "alert", "value": 15 }
+              ]
+            }
+          ],
+          "nextNodeId": "B3"
+        },
+        {
+          "id": "B3",
+          "type": "puzzle_node",
+          "location": "Simulated Data Vault",
+          "story": {
+            "title": "The Key Table",
+            "text": "A simulated vault returns a table of 50 fake keys. You must deduce the real one using constraints.",
+            "narrationText": "A vault opens—keys spill across the screen. But only one is real."
+          },
+          "roleClues": [
+            {
+              "roleId": "decoder",
+              "text": "Constraint hint: 'The real key starts with MH-, contains exactly one digit, and ends with two letters.'"
+            },
+            {
+              "roleId": "pathfinder",
+              "text": "Constraint hint: 'Avoid keys containing the substring ZZ (known decoy signature).' "
+            }
+          ],
+          "puzzles": [
+            {
+              "id": "B3_P1",
+              "type": "logic_match",
+              "prompt": "Select the key that matches all constraints.",
+              "dataTable": {
+                "columns": ["key"],
+                "rows": [
+                  "MH-7Q2-AX",
+                  "MH-12ZZ-KP",
+                  "MK-7Q2-AX",
+                  "MH-AB3-9X",
+                  "MH-ZZ1-QA",
+                  "MH-5TT-AAA",
+                  "MH-1PQ-ZZ"
+                ],
+                "note": "In full version, table has 50 rows. MVP can start with ~10–20."
+              },
+              "validation": { "mode": "exact", "answer": "MH-7Q2-AX" },
+              "effectsOnSuccess": [
+                { "op": "set", "var": "keyRuleUnlocked", "value": true }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "alert", "value": 10 }
+              ]
+            }
+          ],
+          "nextNodeId": "B4"
+        },
+        {
+          "id": "B4",
+          "type": "puzzle_node",
+          "location": "Password Gate",
+          "story": {
+            "title": "Limited Attempts",
+            "text": "Enter the correct key. You have limited attempts before the AI locks down.",
+            "narrationText": "A gate demands a key. You feel the AI watching."
+          },
+          "puzzles": [
+            {
+              "id": "B4_P1",
+              "type": "input_code",
+              "prompt": "Enter the key (4 attempts).",
+              "validation": { "mode": "varEquals", "var": "correctKey" },
+              "attemptsAllowed": 4,
+              "effectsOnSuccess": [],
+              "effectsOnFail": [
+                { "op": "add", "var": "alert", "value": 20 },
+                { "op": "add", "var": "attemptsLeft", "value": -1 }
+              ]
+            }
+          ],
+          "nextNodeId": "B5"
+        },
+        {
+          "id": "B5",
+          "type": "puzzle_node",
+          "location": "Ethics Firewall",
+          "story": {
+            "title": "Disable Subsystems in Order",
+            "text": "Disable three subsystems in the correct order to avoid triggering the AI’s defense escalation.",
+            "narrationText": "Three switches. One wrong order, and the whole facility screams."
+          },
+          "puzzles": [
+            {
+              "id": "B5_P1",
+              "type": "choice",
+              "prompt": "Pick the safest shutdown order.",
+              "options": [
+                { "id": "o1", "label": "Telemetry → Surveillance → Core", "isCorrect": true },
+                { "id": "o2", "label": "Core → Surveillance → Telemetry", "isCorrect": false },
+                { "id": "o3", "label": "Surveillance → Core → Telemetry", "isCorrect": false }
+              ],
+              "effectsOnSuccess": [
+                { "op": "add", "var": "alert", "value": -5 }
+              ],
+              "effectsOnFail": [
+                { "op": "add", "var": "alert", "value": 15 }
+              ]
+            }
+          ],
+          "nextNodeId": "B6"
+        },
+        {
+          "id": "B6",
+          "type": "puzzle_node",
+          "location": "Shutdown Sequence",
+          "story": {
+            "title": "Final Sequence",
+            "text": "Three tokens are required: (1) route safety flag, (2) camera loop status, (3) correct key suffix. Enter them.",
+            "narrationText": "The final console glows. This is it."
+          },
+          "roleClues": [
+            { "roleId": "pathfinder", "text": "Token 1 (route): SAFE if you chose dim corridor." },
+            { "roleId": "builder", "text": "Token 2 (camera): FIXED if you corrected setTimeout." },
+            { "roleId": "decoder", "text": "Token 3 (suffix): last two letters of the real key." }
+          ],
+          "puzzles": [
+            {
+              "id": "B6_P1",
+              "type": "multi_input",
+              "prompt": "Enter the three shutdown tokens.",
+              "validation": {
+                "fields": [
+                  { "id": "token1", "mode": "exact", "answer": "SAFE" },
+                  { "id": "token2", "mode": "exact", "answer": "FIXED" },
+                  { "id": "token3", "mode": "exact", "answer": "AX" }
+                ]
+              },
+              "effectsOnSuccess": [],
+              "effectsOnFail": [
+                { "op": "add", "var": "alert", "value": 25 }
+              ]
+            }
+          ],
+          "nextNodeId": "B_WIN"
+        },
+        {
+          "id": "B_WIN",
+          "type": "win_node",
+          "location": "Dawn Over the City",
+          "story": {
+            "title": "System Offline",
+            "text": "The AI’s core goes dark. Streets go quiet. Humanity breathes again — because you worked together.",
+            "narrationText": "The lights die. Silence returns. And for the first time in years… hope."
+          }
+        }
+      ]
+    }
+  ]
+}
