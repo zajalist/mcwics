@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trophy } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
 export function WinNode({ data }) {
@@ -7,7 +8,7 @@ export function WinNode({ data }) {
   return (
     <div className="editor-node win-node">
       <div className="node-header">
-        <span className="node-type">🏆 Win</span>
+        <span className="node-type"><Trophy size={14} /> Win</span>
         <span className="node-id">{data?.id}</span>
       </div>
       <div className="node-title">{title}</div>

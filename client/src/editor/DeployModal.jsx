@@ -3,6 +3,7 @@
 // Lets them set title, description, visibility, then publish to Firestore.
 
 import React, { useState } from 'react';
+import { Globe, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deployScenario, updateScenario } from '../services/scenarioService';
 
@@ -72,10 +73,10 @@ export default function DeployModal({ scenarioJson, existingDocId, onClose, onDe
           <label className="label">Visibility</label>
           <div className="visibility-toggle">
             <button className={`toggle-btn ${visibility === 'public' ? 'active' : ''}`} onClick={() => setVisibility('public')}>
-              🌍 Public
+              <Globe size={14} /> Public
             </button>
             <button className={`toggle-btn ${visibility === 'private' ? 'active' : ''}`} onClick={() => setVisibility('private')}>
-              🔒 Private
+              <Lock size={14} /> Private
             </button>
           </div>
           <p className="sidebar-hint">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Zap } from 'lucide-react';
 import socket from '../socket';
 
 export default function ChoiceNode({ choices }) {
@@ -12,7 +13,7 @@ export default function ChoiceNode({ choices }) {
 
   return (
     <div className="choice-node">
-      <div className="puzzle-panel-header">⚡ Decision Point</div>
+      <div className="puzzle-panel-header"><Zap size={18} /> Decision Point</div>
       <div className="choice-list">
         {choices.map(choice => (
           <button

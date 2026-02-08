@@ -1,4 +1,5 @@
 import React from 'react';
+import { Zap, ArrowRight } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
 export function ChoiceNode({ data }) {
@@ -10,7 +11,7 @@ export function ChoiceNode({ data }) {
     <div className={`editor-node choice-node ${invalid ? 'invalid' : ''}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-header">
-        <span className="node-type">⚡ Choice</span>
+        <span className="node-type"><Zap size={14} /> Choice</span>
         <span className="node-id">{data?.id}</span>
       </div>
       <div className="node-title">{title}</div>
@@ -23,7 +24,7 @@ export function ChoiceNode({ data }) {
           return (
             <li key={c.id || idx} className="choice-item">
               <span className="choice-label">{c.label}</span>
-              <span className={`choice-next ${!c.nextNodeId ? 'missing' : ''}`}>→ {c.nextNodeId || '—'}</span>
+              <span className={`choice-next ${!c.nextNodeId ? 'missing' : ''}`}><ArrowRight size={12} /> {c.nextNodeId || '—'}</span>
               <Handle
                 type="source"
                 position={Position.Right}

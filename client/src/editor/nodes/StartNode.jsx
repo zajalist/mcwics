@@ -1,4 +1,5 @@
 import React from 'react';
+import { Rocket } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
 export function StartNode({ data }) {
@@ -8,7 +9,7 @@ export function StartNode({ data }) {
   return (
     <div className={`editor-node start-node ${!next ? 'invalid' : ''}`}>
       <div className="node-header">
-        <span className="node-type">🚀 Start</span>
+        <span className="node-type"><Rocket size={14} /> Start</span>
         <span className="node-id">{data?.id}</span>
       </div>
       <div className="node-title">{title}</div>

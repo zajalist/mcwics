@@ -1,4 +1,5 @@
 import React from 'react';
+import { Skull } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
 export function FailNode({ data }) {
@@ -7,7 +8,7 @@ export function FailNode({ data }) {
   return (
     <div className="editor-node fail-node">
       <div className="node-header">
-        <span className="node-type">💀 Fail</span>
+        <span className="node-type"><Skull size={14} /> Fail</span>
         <span className="node-id">{data?.id}</span>
       </div>
       <div className="node-title">{title}</div>

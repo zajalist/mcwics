@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, Puzzle, ChevronRight } from 'lucide-react';
 import socket from '../socket';
 import ChoicePuzzle from './puzzles/ChoicePuzzle';
 import InputCodePuzzle from './puzzles/InputCodePuzzle';
@@ -23,14 +24,14 @@ export default function PuzzlePanel({ puzzles, solvedPuzzles, puzzleAttempts, no
     // Node with no puzzles (e.g. red herring auto-effect node) — auto advance
     return (
       <div className="puzzle-panel">
-        <div className="puzzle-panel-header">⚠️ Event</div>
+        <div className="puzzle-panel-header"><AlertTriangle size={18} /> Event</div>
         <p className="no-puzzles">No puzzles here.</p>
         {hasNextNode && (
           <button
             className="btn btn-primary"
             onClick={() => socket.emit('ADVANCE_NODE', {}, () => {})}
           >
-            Continue →
+            Continue <ChevronRight size={16} />
           </button>
         )}
       </div>
@@ -41,7 +42,7 @@ export default function PuzzlePanel({ puzzles, solvedPuzzles, puzzleAttempts, no
 
   return (
     <div className="puzzle-panel">
-      <div className="puzzle-panel-header">🧩 Puzzles</div>
+      <div className="puzzle-panel-header"><Puzzle size={18} /> Puzzles</div>
 
       {puzzles.map(puzzle => {
         const Component = PUZZLE_COMPONENTS[puzzle.type];
@@ -67,7 +68,7 @@ export default function PuzzlePanel({ puzzles, solvedPuzzles, puzzleAttempts, no
           className="btn btn-primary btn-advance"
           onClick={() => socket.emit('ADVANCE_NODE', {}, () => {})}
         >
-          Proceed to next room →
+          Proceed to next room <ChevronRight size={16} />
         </button>
       )}
     </div>

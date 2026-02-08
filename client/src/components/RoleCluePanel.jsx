@@ -1,4 +1,5 @@
 import React from 'react';
+import { Lock, Unlock } from 'lucide-react';
 
 export default function RoleCluePanel({ roleClues, myRole }) {
   if (!roleClues || roleClues.length === 0) return null;
@@ -8,7 +9,7 @@ export default function RoleCluePanel({ roleClues, myRole }) {
   if (myClues.length === 0) {
     return (
       <div className="role-clue-panel">
-        <div className="role-clue-header">🔒 Role Intel</div>
+        <div className="role-clue-header"><Lock size={14} /> Role Intel</div>
         <p className="no-clue">No clues for your role on this node. Help your team!</p>
       </div>
     );
@@ -17,7 +18,7 @@ export default function RoleCluePanel({ roleClues, myRole }) {
   return (
     <div className="role-clue-panel">
       <div className="role-clue-header">
-        🔓 Intel for <span className="role-highlight">{myRole}</span>
+        <Unlock size={14} /> Intel for <span className="role-highlight">{myRole}</span>
       </div>
       {myClues.map((clue, i) => (
         <div key={i} className="role-clue">

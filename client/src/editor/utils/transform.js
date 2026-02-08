@@ -106,7 +106,10 @@ export function exportToMvpJson(nodes, edges) {
     if (n.type === 'choice_node') {
       return { ...base, choices: n.data.choices || [] };
     }
-    // win_node / fail_node — just base
+    // win_node / fail_node — base + mediaUrl
+    if (n.type === 'win_node' || n.type === 'fail_node') {
+      return { ...base, mediaUrl: n.data.mediaUrl || '' };
+    }
     return base;
   });
 

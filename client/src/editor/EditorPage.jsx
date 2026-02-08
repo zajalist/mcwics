@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Rocket, X } from 'lucide-react';
 import ReactFlow, {
   Background, Controls, MiniMap, Panel,
   addEdge, applyNodeChanges, applyEdgeChanges,
@@ -45,8 +46,8 @@ function makeNode(type, extraPos = 0) {
     start_node:   { id, location: 'Scenario Intro', story: { ...story, title: 'Mission Briefing' }, nextNodeId: '' },
     puzzle_node:  { id, location: 'New Puzzle', story, roleClues: [], puzzles: [], nextNodeId: '' },
     choice_node:  { id, location: 'New Choice', story, choices: [{ id: `${id}_C1`, label: 'Option 1', nextNodeId: '' }] },
-    win_node:     { id, location: 'Victory', story: { ...story, title: 'You Win' } },
-    fail_node:    { id, location: 'Defeat',  story: { ...story, title: 'Game Over' } },
+    win_node:     { id, location: 'Victory', story: { ...story, title: 'You Win' }, mediaUrl: '' },
+    fail_node:    { id, location: 'Defeat',  story: { ...story, title: 'Game Over' }, mediaUrl: '' },
   };
 
   return { id, type, position: { x, y }, data: dataByType[type] || dataByType.puzzle_node };
@@ -212,14 +213,14 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
             <input ref={fileRef} type="file" accept=".json,application/json" onChange={handleImport} />
           </label>
           <button className="btn btn-sm" onClick={handleExport}>Export JSON</button>
-          <button className="btn btn-sm btn-deploy" onClick={handleDeploy}>🚀 Deploy</button>
+          <button className="btn btn-sm btn-deploy" onClick={handleDeploy}><Rocket size={14} /> Deploy</button>
         </div>
       </div>
 
       {/* ── validation banner ── */}
       {validationSummary && (
         <div className="validation-banner">
-          <button className="banner-close" onClick={() => setErrors([])} aria-label="Dismiss">✕</button>
+          <button className="banner-close" onClick={() => setErrors([])} aria-label="Dismiss"><X size={16} /></button>
           <strong>Cannot export — fix these issues:</strong>
           <ul>{validationSummary.map((e, i) => <li key={i}>{e}</li>)}</ul>
         </div>

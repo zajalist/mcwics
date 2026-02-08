@@ -1,4 +1,5 @@
 import React from 'react';
+import { Puzzle } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
 /** All engine-supported puzzle types */
@@ -20,7 +21,7 @@ export function PuzzleNode({ data }) {
   return (
     <div className={`editor-node puzzle-node ${!next ? 'invalid' : ''}`}>
       <div className="node-header">
-        <span className="node-type">🧩 Puzzle</span>
+        <span className="node-type"><Puzzle size={14} /> Puzzle</span>
         <span className="node-id">{data?.id}</span>
       </div>
       <div className="node-title">{title}</div>

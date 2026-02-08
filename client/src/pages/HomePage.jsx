@@ -122,7 +122,7 @@ export default function HomePage({ onRoomJoined, customScenarioJson, onClearCust
               </div>
             ) : (
               <>
-                <label className="label">Scenario</label>
+                <label className="label">Template Scenario</label>
                 <select
                   className="input"
                   value={selectedScenario}

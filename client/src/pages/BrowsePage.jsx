@@ -3,6 +3,7 @@
 // Users can Play (start scavenge) or Edit (load into editor).
 
 import React, { useEffect, useState } from 'react';
+import { Globe, FolderOpen, AlertTriangle, Lock, GitFork, Play, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { listPublicScenarios, listMyScenarios, deleteScenario, forkScenario } from '../services/scenarioService';
 
@@ -71,11 +72,11 @@ export default function BrowsePage({ onNavigate }) {
 
         <div className="browse-tabs">
           <button className={`tab-btn ${tab === 'public' ? 'active' : ''}`} onClick={() => setTab('public')}>
-            🌍 Community
+            <Globe size={16} /> Community
           </button>
           {user && (
             <button className={`tab-btn ${tab === 'mine' ? 'active' : ''}`} onClick={() => setTab('mine')}>
-              📂 My Scenarios
+              <FolderOpen size={16} /> My Scenarios
             </button>
           )}
         </div>
@@ -84,7 +85,7 @@ export default function BrowsePage({ onNavigate }) {
           <div className="loading">Loading scenarios…</div>
         ) : error ? (
           <div className="browse-empty">
-            <p>⚠️ {error}</p>
+            <p><AlertTriangle size={16} /> {error}</p>
             <button className="btn btn-primary" onClick={load}>Retry</button>
           </div>
         ) : scenarios.length === 0 ? (
@@ -103,33 +104,33 @@ export default function BrowsePage({ onNavigate }) {
                 <div className="scenario-card-header">
                   <h3>{s.title}</h3>
                   <span className={`visibility-badge ${s.visibility}`}>
-                    {s.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
+                    {s.visibility === 'public' ? <><Globe size={14} /> Public</> : <><Lock size={14} /> Private</>}
                   </span>
                 </div>
                 <p className="scenario-desc">{s.description || 'No description'}</p>
                 <div className="scenario-meta">
                   <span>by {s.authorName || 'Anonymous'}</span>
-                  {s.forkedFrom && <span className="forked-badge">🔀 Remix</span>}
+                  {s.forkedFrom && <span className="forked-badge"><GitFork size={14} /> Remix</span>}
                   {s.updatedAt?.toDate && (
                     <span>{s.updatedAt.toDate().toLocaleDateString()}</span>
                   )}
                 </div>
                 <div className="scenario-card-actions">
                   <button className="btn btn-sm btn-primary" onClick={() => handlePlay(s)}>
-                    ▶ Play
+                    <Play size={14} /> Play
                   </button>
                   {isOwner(s) ? (
                     <>
                       <button className="btn btn-sm" onClick={() => handleEdit(s)}>
-                        ✏️ Edit
+                        <Pencil size={14} /> Edit
                       </button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id)}>
-                        🗑 Delete
+                        <Trash2 size={14} /> Delete
                       </button>
                     </>
                   ) : (
                     <button className="btn btn-sm" onClick={() => handleFork(s)}>
-                      🔀 Fork & Edit
+                      <GitFork size={14} /> Fork & Edit
                     </button>
                   )}
                 </div>

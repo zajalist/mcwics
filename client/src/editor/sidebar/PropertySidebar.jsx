@@ -1,4 +1,5 @@
 import React from 'react';
+import { Rocket, Puzzle, Zap, Trophy, Skull, Video, X } from 'lucide-react';
 import { MAX_CHOICES } from '../nodes/ChoiceNode';
 import { PUZZLE_TYPES } from '../nodes/PuzzleNode';
 
@@ -130,12 +131,15 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
   };
 
   /* ── label for node type ── */
-  const typeBadge = { start_node: '🚀 Start', puzzle_node: '🧩 Puzzle', choice_node: '⚡ Choice', win_node: '🏆 Win', fail_node: '💀 Fail' }[type] || type;
+  const TYPE_ICONS = { start_node: Rocket, puzzle_node: Puzzle, choice_node: Zap, win_node: Trophy, fail_node: Skull };
+  const TYPE_LABELS = { start_node: 'Start', puzzle_node: 'Puzzle', choice_node: 'Choice', win_node: 'Win', fail_node: 'Fail' };
+  const TypeIcon = TYPE_ICONS[type];
+  const typeBadge = TYPE_LABELS[type] || type;
 
   return (
     <div className="editor-sidebar">
       <div className="sidebar-header">
-        <span>{typeBadge} — {selected.id}</span>
+        <span>{TypeIcon && <TypeIcon size={14} />} {typeBadge} — {selected.id}</span>
         <button className="btn btn-sm btn-danger" onClick={onDelete}>Delete</button>
       </div>
 
@@ -191,7 +195,7 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
                   <option value="coordinator">coordinator</option>
                 </select>
                 <input className="input" value={rc.text || ''} onChange={e => updateRoleClue(idx, 'text', e.target.value)} placeholder="Clue text…" />
-                <button className="btn btn-xs btn-ghost" onClick={() => removeRoleClue(idx)}>✕</button>
+                <button className="btn btn-xs btn-ghost" onClick={() => removeRoleClue(idx)}><X size={12} /></button>
               </div>
             ))}
             <div className="role-actions">
@@ -211,7 +215,7 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
                     <option value="" disabled>Select type…</option>
                     {PUZZLE_TYPES.map(pt => <option key={pt.value} value={pt.value}>{pt.label}</option>)}
                   </select>
-                  <button className="btn btn-xs btn-ghost" onClick={() => removePuzzle(pIdx)}>✕</button>
+                  <button className="btn btn-xs btn-ghost" onClick={() => removePuzzle(pIdx)}><X size={12} /></button>
                 </div>
 
                 <input className="input puzzle-prompt" value={p.prompt || ''} placeholder="Prompt text" onChange={e => updatePuzzle(pIdx, 'prompt', e.target.value)} />
@@ -230,7 +234,7 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
                       <div key={oIdx} className="option-row">
                         <input type="checkbox" checked={!!o.isCorrect} onChange={e => updatePuzzleOption(pIdx, oIdx, 'isCorrect', e.target.checked)} title="Correct?" />
                         <input className="input" value={o.label || ''} onChange={e => updatePuzzleOption(pIdx, oIdx, 'label', e.target.value)} />
-                        <button className="btn btn-xs btn-ghost" onClick={() => removePuzzleOption(pIdx, oIdx)}>✕</button>
+                        <button className="btn btn-xs btn-ghost" onClick={() => removePuzzleOption(pIdx, oIdx)}><X size={12} /></button>
                       </div>
                     ))}
                     <button className="btn btn-xs" onClick={() => addPuzzleOption(pIdx)}>+ Option</button>
@@ -294,7 +298,7 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
               <span className="choice-idx">{idx + 1}</span>
               <input className="input" value={c.label || ''} placeholder="Label" onChange={e => updateChoice(idx, 'label', e.target.value)} />
               <input className="input" value={c.nextNodeId || ''} placeholder="nextNodeId" onChange={e => updateChoice(idx, 'nextNodeId', e.target.value)} />
-              <button className="btn btn-xs btn-ghost" onClick={() => removeChoice(idx)}>✕</button>
+              <button className="btn btn-xs btn-ghost" onClick={() => removeChoice(idx)}><X size={12} /></button>
             </div>
           ))}
           {(data.choices || []).length < MAX_CHOICES ? (
@@ -309,6 +313,25 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
       {isTerminal && (
         <div className="section">
           <p className="sidebar-hint">{isWin ? 'This is a terminal win node — the scenario ends here with a victory.' : 'This is a terminal fail node — the scenario ends here with a defeat.'}</p>
+
+          <div className="form-group">
+            <label className="label"><Video size={14} /> End Screen Media (optional)</label>
+            <input
+              className="input"
+              value={data.mediaUrl || ''}
+              onChange={e => set('mediaUrl', e.target.value)}
+              placeholder="URL to .mp4, .gif, or image"
+            />
+            <p className="sidebar-hint">Paste a URL to an MP4, GIF, or image. It will display on the end screen for some fun flair.</p>
+            {data.mediaUrl && (
+              <div className="media-preview">
+                {data.mediaUrl.match(/\.mp4/i)
+                  ? <video src={data.mediaUrl} muted autoPlay loop style={{ maxWidth: '100%', borderRadius: 8 }} />
+                  : <img src={data.mediaUrl} alt="preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
+                }
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

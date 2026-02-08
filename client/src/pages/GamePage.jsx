@@ -1,4 +1,5 @@
 import React from 'react';
+import { Wrench, Compass, Search, ChevronRight } from 'lucide-react';
 import socket from '../socket';
 import MeterPanel from '../components/MeterPanel';
 import StoryPanel from '../components/StoryPanel';
@@ -32,7 +33,18 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
   if (currentNode.type === 'win_node') {
     return (
       <WinScreen
-        gameOver={{ won: true, title: currentNode.story.title, reason: currentNode.story.text }}
+        gameOver={{ won: true, title: currentNode.story.title, reason: currentNode.story.text, mediaUrl: currentNode.mediaUrl }}
+        roomState={roomState}
+        onBackToHome={onBackToHome}
+      />
+    );
+  }
+
+  // Check if current node is a fail node
+  if (currentNode.type === 'fail_node') {
+    return (
+      <FailScreen
+        gameOver={{ won: false, title: currentNode.story.title || 'Game Over', reason: currentNode.story.text, mediaUrl: currentNode.mediaUrl }}
         roomState={roomState}
         onBackToHome={onBackToHome}
       />
@@ -64,7 +76,7 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
                 {currentNode.story?.text && <p className="start-text">{currentNode.story.text}</p>}
                 {currentNode.story?.narrationText && <p className="start-narration">{currentNode.story.narrationText}</p>}
                 <button className="btn btn-primary start-continue" onClick={() => socket.emit('ADVANCE_NODE', {}, () => {})}>
-                  Begin Mission →
+                  Begin Mission <ChevronRight size={16} style={{verticalAlign:'middle'}} />
                 </button>
               </div>
             ) : currentNode.type === 'choice_node' ? (
@@ -85,7 +97,7 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
         <div className="players-bar">
           {roomState.players.map(p => (
             <div key={p.id} className={`player-badge ${!p.connected ? 'disconnected' : ''}`}>
-              <span className="badge-role">{p.role === 'builder' ? '🔧' : p.role === 'pathfinder' ? '🧭' : '🔍'}</span>
+              <span className="badge-role">{p.role === 'builder' ? <Wrench size={14} /> : p.role === 'pathfinder' ? <Compass size={14} /> : <Search size={14} />}</span>
               <span className="badge-name">{p.name}</span>
             </div>
           ))}

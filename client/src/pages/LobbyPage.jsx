@@ -1,10 +1,16 @@
 import React from 'react';
+import { Wrench, Compass, Search, Star, User } from 'lucide-react';
 import socket from '../socket';
 
-const ROLE_INFO = {
-  builder: { emoji: '🔧', color: '#f59e0b' },
-  pathfinder: { emoji: '🧭', color: '#10b981' },
-  decoder: { emoji: '🔍', color: '#8b5cf6' }
+const ROLE_ICONS = {
+  builder: Wrench,
+  pathfinder: Compass,
+  decoder: Search
+};
+const ROLE_COLORS = {
+  builder: '#d4a574',
+  pathfinder: '#e0b878',
+  decoder: '#8b5cf6'
 };
 
 export default function LobbyPage({ roomState, playerId, onBackToHome }) {
@@ -55,12 +61,12 @@ export default function LobbyPage({ roomState, playerId, onBackToHome }) {
               {roomState.players.map(p => (
                 <li key={p.id} className={`player-item ${!p.connected ? 'disconnected' : ''}`}>
                   <span className="player-name">
-                    {p.name} {p.isHost && '⭐'} {p.id === playerId && '(you)'}
+                    {p.name} {p.isHost && <Star size={14} style={{verticalAlign:'middle', color:'#d4a574'}} />} {p.id === playerId && '(you)'}
                   </span>
                   <span className="player-role">
                     {p.role ? (
-                      <span style={{ color: ROLE_INFO[p.role]?.color }}>
-                        {ROLE_INFO[p.role]?.emoji} {p.role}
+                      <span style={{ color: ROLE_COLORS[p.role] }}>
+                        {React.createElement(ROLE_ICONS[p.role] || Search, { size: 14 })} {p.role}
                       </span>
                     ) : (
                       <span className="no-role">No role</span>
@@ -76,7 +82,8 @@ export default function LobbyPage({ roomState, playerId, onBackToHome }) {
             <h3>Choose Your Role</h3>
             <div className="role-cards">
               {roles.map(role => {
-                const info = ROLE_INFO[role.id] || {};
+                const RoleIcon = ROLE_ICONS[role.id] || Search;
+                const roleColor = ROLE_COLORS[role.id] || '#8b5cf6';
                 const isTaken = takenRoles.has(role.id) &&
                   roomState.players.find(p => p.role === role.id)?.id !== playerId;
                 const isSelected = me?.role === role.id;
@@ -87,9 +94,9 @@ export default function LobbyPage({ roomState, playerId, onBackToHome }) {
                     className={`role-card ${isSelected ? 'selected' : ''} ${isTaken ? 'taken' : ''}`}
                     onClick={() => !isTaken && handleSelectRole(role.id)}
                     disabled={isTaken}
-                    style={{ borderColor: isSelected ? info.color : undefined }}
+                    style={{ borderColor: isSelected ? roleColor : undefined }}
                   >
-                    <span className="role-emoji">{info.emoji}</span>
+                    <span className="role-emoji"><RoleIcon size={24} /></span>
                     <span className="role-name">{role.name}</span>
                     <span className="role-tagline">{role.tagline}</span>
                     {isTaken && <span className="role-taken-label">Taken</span>}
