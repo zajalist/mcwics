@@ -116,6 +116,7 @@ export function PuzzleNode({ data, selected }) {
       <div className="node-sub">Next: {next || '— (connect)'}</div>
       <Handle type="source" position={Position.Right} />
       <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Top} id="ai-input" style={{ background: '#f59e0b', width: 10, height: 10 }} />
     </div>
   );
 }

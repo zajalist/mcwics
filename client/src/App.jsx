@@ -14,6 +14,7 @@ import DocumentationPage from './pages/DocumentationPage';
 import ContactPage from './pages/ContactPage';
 
 function AppInner() {
+  console.log('=== APP RENDERING ===');
   const { user, loading: authLoading } = useAuth();
 
   // page: home | lobby | game | auth | browse | profile | editor

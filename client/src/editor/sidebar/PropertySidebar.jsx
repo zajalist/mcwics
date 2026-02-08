@@ -90,7 +90,21 @@ function WordPuzzleGenerator({ puzzle, pIdx, updatePuzzle }) {
   );
 }
 
-export function PropertySidebar({ selected, onUpdate, onDelete, embedded, globalSettings, onUpdateGlobalSettings }) {
+export function PropertySidebar({
+  selected,
+  onUpdate,
+  onDelete,
+  embedded,
+  globalSettings,
+  onUpdateGlobalSettings,
+  aiSessionKey,
+  onAiSessionKeyChange,
+  onListModels,
+  aiModels,
+  aiModelsLoading,
+  fallbackCredits,
+  aiRuntime
+}) {
   if (!selected) {
     if (embedded) return null;
     return (
@@ -613,92 +627,238 @@ export function PropertySidebar({ selected, onUpdate, onDelete, embedded, global
         </div>
       )}
 
-      {/* ── AI generator config ── */}
+      {/* ── AI enhancement config ── */}
       {isAI && (
         <div className="section">
-          <div className="section-title">AI Generator Configuration</div>
+          <div className="section-title">AI Enhancement Configuration</div>
+          <p className="sidebar-hint" style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
+            AI will enhance the connected puzzle node by improving existing text and adding images/videos.
+          </p>
+          
           <div className="form-group">
-            <label className="label">AI Prompt (Required) *</label>
+            <label className="label">Preset Enhancement Templates</label>
+            <select
+              className="input"
+              onChange={e => {
+                if (e.target.value) {
+                  set('aiConfig', { ...(data.aiConfig || {}), prompt: e.target.value });
+                }
+              }}
+              defaultValue=""
+            >
+              <option value="">-- Select a preset template --</option>
+              <optgroup label="Scavenger Hunt - Text Enhancement">
+                <option value="Transform this into an exciting scavenger hunt story. Make the narrative more engaging and mysterious. Enhance the puzzle prompts to be clearer and more immersive in the scavenger hunt theme.">
+                  Make Story More Exciting
+                </option>
+                <option value="Improve the clarity and instructions of this scavenger hunt puzzle. Make the clues more specific and easier to follow while maintaining the challenge. Add helpful context about the location or task.">
+                  Improve Puzzle Clarity
+                </option>
+                <option value="Enhance this scavenger hunt challenge by adding dramatic tension and urgency. Make it feel like a time-sensitive mission with higher stakes. Improve role-specific clues to be more detailed.">
+                  Add Drama & Urgency
+                </option>
+              </optgroup>
+              <optgroup label="Scavenger Hunt - Images">
+                <option value="Generate atmospheric images for this scavenger hunt location. Create visuals showing: 1) The main location/landmark, 2) Close-up details of clues or objects, 3) Environmental context that helps players orient themselves.">
+                  Location + Environmental Images
+                </option>
+                <option value="Create images that show the puzzle elements for this scavenger hunt. Include: 1) Visual representation of the challenge, 2) Clue images that hint at the solution, 3) A map or diagram if relevant to the location.">
+                  Puzzle Visual Aids
+                </option>
+                <option value="Generate scene-setting images that capture the mood of this scavenger hunt stop. Focus on: 1) Wide shot of the area, 2) Interesting architectural or natural details, 3) Atmospheric lighting that matches the time of day.">
+                  Atmospheric Scene Images
+                </option>
+              </optgroup>
+              <optgroup label="Scavenger Hunt - Complete Enhancement">
+                <option value="Fully enhance this scavenger hunt location: Make the story more dramatic and immersive. Improve puzzle prompts to be crystal clear with better hints. Add role-specific guidance for team coordination. Generate 2-3 atmospheric images of the location showing key landmarks and visual clues.">
+                  Complete Location Enhancement
+                </option>
+                <option value="Transform this into a premium scavenger hunt experience: Rewrite the narrative to be more engaging and suspenseful. Polish all puzzle instructions for maximum clarity. Enhance team roles with specific tasks. Create vivid location imagery showing the area from multiple angles.">
+                  Premium Experience Upgrade
+                </option>
+              </optgroup>
+              <optgroup label="Custom Safety Templates">
+                <option value="Enhance this puzzle with family-friendly, age-appropriate content suitable for participants ages 10+. Keep language simple and encouraging. Focus on fun and discovery rather than competition.">
+                  Family-Friendly Enhancement
+                </option>
+                <option value="Improve this challenge for educational purposes. Add interesting facts about the location or topic. Make the learning objectives clear while keeping it entertaining. Include helpful context and vocabulary definitions.">
+                  Educational Focus
+                </option>
+              </optgroup>
+            </select>
+            <p className="sidebar-hint" style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
+              Select a preset template, then customize below if needed. Presets are designed for safe, engaging scavenger hunt content.
+            </p>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Enhancement Instructions (Required) *</label>
             <textarea
               className="input"
-              rows={4}
+              rows={5}
               value={data.aiConfig?.prompt || ''}
               onChange={e => set('aiConfig', { ...(data.aiConfig || {}), prompt: e.target.value })}
-              placeholder="Describe what you want the AI to generate...\n\nExample: Generate 3 mysterious images of an abandoned laboratory with cryptic symbols on the walls"
+              placeholder="Describe how to enhance the connected puzzle...\n\nExample: Make the story more dramatic and suspenseful. Add vivid imagery descriptions of the abandoned laboratory, focusing on scientific equipment and mysterious symbols."
             />
             {!(data.aiConfig?.prompt || '').trim() && (
-              <p className="sidebar-hint" style={{ color: '#ef4444' }}>⚠️ Prompt is required for AI generation</p>
+              <p className="sidebar-hint" style={{ color: '#ef4444' }}>⚠️ Instructions are required</p>
             )}
           </div>
 
           <div className="form-group">
-            <label className="label">Generate Content Types</label>
+            <label className="label">Session API Key (not saved)</label>
+            <input
+              className="input"
+              type="password"
+              value={aiSessionKey || ''}
+              onChange={e => onAiSessionKeyChange?.(e.target.value)}
+              placeholder="Paste your Gemini API key for this session"
+              autoComplete="off"
+            />
+            <div className="ai-key-actions">
+              <button
+                className="btn btn-xs"
+                type="button"
+                onClick={() => onAiSessionKeyChange?.('')}
+                disabled={!aiSessionKey}
+              >
+                Clear
+              </button>
+              <button
+                className="btn btn-xs"
+                type="button"
+                onClick={() => onListModels?.()}
+                disabled={aiModelsLoading}
+              >
+                {aiModelsLoading ? 'Listing…' : 'List Models'}
+              </button>
+            </div>
+            <p className="sidebar-hint">
+              Stored only in memory. You will need to re-enter it after reopening the editor.
+            </p>
+            {!aiSessionKey && typeof fallbackCredits === 'number' && (
+              <p className="sidebar-hint" style={{ color: '#f59e0b' }}>
+                Shared credits remaining: {fallbackCredits}
+              </p>
+            )}
+            {aiModels?.error && (
+              <div className="ai-models-error">{aiModels.error}</div>
+            )}
+            {Array.isArray(aiModels?.items) && aiModels.items.length > 0 && (
+              <div className="ai-models-list">
+                {aiModels.items.map((model) => (
+                  <div key={model.name} className="ai-model-row">
+                    <div className="ai-model-name">{model.displayName || model.name}</div>
+                    <div className="ai-model-id">{model.name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="label">Model Selection</label>
+            <select
+              className="input"
+              value={data.aiConfig?.model || ''}
+              onChange={e => set('aiConfig', { ...(data.aiConfig || {}), model: e.target.value })}
+              disabled={!Array.isArray(aiModels?.items) || aiModels.items.length === 0}
+            >
+              <option value="" disabled>List models to select</option>
+              {(aiModels?.items || []).map((model) => (
+                <option key={model.name} value={model.normalizedName || model.name}>
+                  {model.displayName || model.name}
+                </option>
+              ))}
+            </select>
+            <p className="sidebar-hint">
+              The first listed model is default. Use List Models to refresh available options.
+            </p>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Enhancement Types</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  checked={(data.aiConfig?.generates || []).includes('images')}
+                  checked={(data.aiConfig?.enhances || []).includes('improveText')}
                   onChange={e => {
-                    const generates = data.aiConfig?.generates || [];
+                    const enhances = data.aiConfig?.enhances || [];
                     const updated = e.target.checked
-                      ? [...generates, 'images']
-                      : generates.filter(g => g !== 'images');
-                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                      ? [...enhances, 'improveText']
+                      : enhances.filter(g => g !== 'improveText');
+                    set('aiConfig', { ...(data.aiConfig || {}), enhances: updated });
                   }}
                 />
-                <span>Images</span>
+                <span>Improve Existing Text (story, puzzles, clues)</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  checked={(data.aiConfig?.generates || []).includes('videos')}
+                  checked={(data.aiConfig?.enhances || []).includes('addImages')}
                   onChange={e => {
-                    const generates = data.aiConfig?.generates || [];
+                    const enhances = data.aiConfig?.enhances || [];
                     const updated = e.target.checked
-                      ? [...generates, 'videos']
-                      : generates.filter(g => g !== 'videos');
-                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                      ? [...enhances, 'addImages']
+                      : enhances.filter(g => g !== 'addImages');
+                    set('aiConfig', { ...(data.aiConfig || {}), enhances: updated });
                   }}
                 />
-                <span>Videos</span>
+                <span>Generate & Add Images</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  checked={(data.aiConfig?.generates || []).includes('text')}
+                  checked={(data.aiConfig?.enhances || []).includes('addVideos')}
                   onChange={e => {
-                    const generates = data.aiConfig?.generates || [];
+                    const enhances = data.aiConfig?.enhances || [];
                     const updated = e.target.checked
-                      ? [...generates, 'text']
-                      : generates.filter(g => g !== 'text');
-                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                      ? [...enhances, 'addVideos']
+                      : enhances.filter(g => g !== 'addVideos');
+                    set('aiConfig', { ...(data.aiConfig || {}), enhances: updated });
                   }}
                 />
-                <span>Text</span>
+                <span>Add Video Descriptions (manual upload needed)</span>
               </label>
             </div>
-            {(data.aiConfig?.generates || []).length === 0 && (
-              <p className="sidebar-hint" style={{ color: '#f59e0b', marginTop: '0.5rem' }}>⚠️ Select at least one content type to generate</p>
+            {(data.aiConfig?.enhances || []).length === 0 && (
+              <p className="sidebar-hint" style={{ color: '#f59e0b', marginTop: '0.5rem' }}>⚠️ Select at least one enhancement type</p>
             )}
           </div>
 
           <div className="form-group">
-            <label className="label">Target Puzzle Node (Optional)</label>
+            <label className="label">Connected Puzzle Node</label>
             <input
               className="input"
-              value={data.aiConfig?.targetPuzzleId || ''}
-              onChange={e => set('aiConfig', { ...(data.aiConfig || {}), targetPuzzleId: e.target.value })}
-              placeholder="P_XXX — leave blank to use manually"
+              value={data.targetPuzzleId || ''}
+              readOnly
+              placeholder="Connect this node to a puzzle using the bottom pin"
+              style={{ cursor: 'not-allowed', opacity: 0.7 }}
             />
             <p className="sidebar-hint">
-              Optional: Specify a puzzle node ID to automatically apply generated content to.
-              Leave blank to manually use generated content elsewhere.
+              Connect the AI node to a puzzle node by dragging from the bottom pin (orange) to the top pin of a puzzle node.
+              The AI will enhance that puzzle's content when you deploy.
             </p>
           </div>
 
           <p className="sidebar-hint" style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            ℹ️ AI generation happens at <strong>deploy time</strong>. When you press Deploy, this node will call the API to generate content based on your prompt. The generated content is cached in the database and won't appear in the game JSON.
+            🤖 <strong>Powered by Google Gemini + Image AI</strong><br/>
+            Text enhancement uses Gemini API. Image generation requires additional setup (configure VITE_IMAGE_API_KEY in .env for Stability AI, DALL-E, or similar).
           </p>
+
+          {aiRuntime?.status === 'error' && aiRuntime.message && (
+            <div className="ai-error-copy">
+              <div className="ai-error-text">{aiRuntime.message}</div>
+              <button
+                className="btn btn-xs"
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(aiRuntime.message)}
+              >
+                Copy Error
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

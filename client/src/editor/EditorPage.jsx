@@ -16,6 +16,7 @@ import { AINode } from './nodes/AINode';
 import { PropertySidebar } from './sidebar/PropertySidebar';
 import { exportToMvpJson, importFromMvpJson, validateGraph } from './utils/transform';
 import DeployModal from './DeployModal';
+import { executeAIEnhancement, listGeminiModels } from '../services/ai';
 
 /* ── node type registry ── */
 const nodeTypes = {
@@ -47,10 +48,10 @@ function makeNode(type, extraPos = 0, options = {}) {
 
   const dataByType = {
     start_node:    { id, location: 'Scenario Intro', story: { ...story, title: 'Mission Briefing' }, nextNodeId: '' },
-    puzzle_node:   { id, location: 'New Puzzle', story, roleClues: [], puzzles: [], nextNodeId: '', aiPrompt: '' },
+    puzzle_node:   { id, location: 'New Puzzle', story, roleClues: [], puzzles: [], nextNodeId: '' },
     choice_node:   { id, location: 'New Choice', story, choices: [{ id: `${id}_C1`, label: 'Option 1', nextNodeId: '' }] },
     endpoint_node: { id, location: options.outcome === 'fail' ? 'Defeat' : 'Victory', outcome: options.outcome || 'win', story: { ...story, title: options.outcome === 'fail' ? 'Game Over' : 'You Win' }, mediaUrl: '' },
-    ai_node:       { id, location: 'AI Generator', aiConfig: { prompt: '', generates: [], targetPuzzleId: '' }, generatedContent: null },
+    ai_node:       { id, location: 'AI Enhancer', aiConfig: { prompt: '', enhances: ['improveText', 'addImages'] }, targetPuzzleId: '' },
   };
 
   const node = { id, type, position: { x, y }, data: dataByType[type] || dataByType.puzzle_node };
@@ -156,6 +157,48 @@ function makeNode(type, extraPos = 0, options = {}) {
   return node;
 }
 
+function applyAiEnhancementToNode(node, enhanced) {
+  const data = { ...(node.data || {}) };
+  const story = data.story || { title: '', text: '', narrationText: '' };
+  const looksJsonish = (value) => {
+    if (typeof value !== 'string') return false;
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    if (trimmed.startsWith('```')) return true;
+    return trimmed.startsWith('{') || trimmed.startsWith('[');
+  };
+
+  if (enhanced && typeof enhanced.story === 'object' && enhanced.story !== null) {
+    data.story = { ...story, ...enhanced.story };
+  }
+
+  if (Array.isArray(enhanced?.puzzles) && enhanced.puzzles.some(p => p && typeof p.type === 'string')) {
+    data.puzzles = enhanced.puzzles;
+  }
+
+  if (Array.isArray(enhanced?.roleClues) && enhanced.roleClues.some(rc => rc && typeof rc.roleId === 'string')) {
+    data.roleClues = enhanced.roleClues;
+  }
+
+  if (typeof enhanced?.location === 'string' && enhanced.location.trim()) {
+    data.location = enhanced.location.trim();
+  }
+
+  if (typeof enhanced?.improvedText === 'string' && enhanced.improvedText.trim() && !looksJsonish(enhanced.improvedText)) {
+    data.story = { ...(data.story || story), text: enhanced.improvedText };
+  }
+
+  if (Array.isArray(enhanced?.imageDescriptions)) {
+    data.aiImageDescriptions = enhanced.imageDescriptions;
+  }
+
+  if (Array.isArray(enhanced?.videoDescriptions)) {
+    data.aiVideoDescriptions = enhanced.videoDescriptions;
+  }
+
+  return { ...node, data };
+}
+
 /* helper: describe what a palette entry creates */
 function describeItem(item) {
   if (item.nodeType === 'start_node')    return 'The entry point of your scenario. Players begin here.';
@@ -202,7 +245,7 @@ function NodePalette({ onAddNode, onPreviewItem }) {
     { label: 'Start Point',       nodeType: 'start_node',    Icon: Play,     color: '#8b5cf6' },
     { label: 'Puzzle',            nodeType: 'puzzle_node',   Icon: Puzzle,   color: '#3b82f6' },
     { label: 'Choice',            nodeType: 'choice_node',   Icon: GitFork,  color: '#e8dcc8' },
-    { label: 'AI Generator',      nodeType: 'ai_node',       Icon: Sparkles, color: '#f59e0b' },
+    { label: 'AI Enhancer',       nodeType: 'ai_node',       Icon: Sparkles, color: '#f59e0b' },
     { label: 'Endpoint (Win)',    nodeType: 'endpoint_node', outcome: 'win',  Icon: Trophy, color: '#10b981' },
     { label: 'Endpoint (Fail)',   nodeType: 'endpoint_node', outcome: 'fail', Icon: Skull,  color: '#ef4444' },
   ];
@@ -319,6 +362,13 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
   const [errors, setErrors]   = useState([]);
   const [showDeploy, setShowDeploy] = useState(false);
   const [docId, setDocId]     = useState(propDocId || null);
+  const [aiRuns, setAiRuns]   = useState({});
+  const [aiSessionKeys, setAiSessionKeys] = useState({});
+  const [aiModelsByNode, setAiModelsByNode] = useState({});
+  const [aiModelsLoading, setAiModelsLoading] = useState({});
+  const [fallbackModels, setFallbackModels] = useState(null);
+  const [fallbackModelsLoading, setFallbackModelsLoading] = useState(false);
+  const [fallbackCredits, setFallbackCredits] = useState(3);
   const [palettePreview, setPalettePreview] = useState(null); // { item, folder }
   const [previewData, setPreviewData] = useState(null);       // temp node data
   const [showNodePreview, setShowNodePreview] = useState(false); // F-key preview mode
@@ -350,11 +400,28 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
   /* derived selected node — always fresh from nodes array */
   const selected = useMemo(() => nodes.find(n => n.id === selectedId) || null, [nodes, selectedId]);
 
+  const lockedNodeIds = useMemo(() => {
+    const locked = new Set();
+    Object.values(aiRuns).forEach(run => {
+      if (run?.status === 'running' && run?.targetId) locked.add(run.targetId);
+    });
+    return locked;
+  }, [aiRuns]);
+
+  const isNodeLocked = useCallback((nodeId) => lockedNodeIds.has(nodeId), [lockedNodeIds]);
+
   /* ── F-key preview — press F to preview selected node ── */
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const active = document.activeElement;
+      const isTyping = !!active && (
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.tagName === 'SELECT' ||
+        active.isContentEditable
+      );
       if (e.key === 'f' || e.key === 'F') {
-        if (selected && !showNodePreview) {
+        if (selected && !showNodePreview && !isTyping) {
           e.preventDefault();
           setShowNodePreview(true);
         }
@@ -369,22 +436,19 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
 
   /* ── React Flow handlers (use built-in apply helpers) ── */
   const onNodesChange = useCallback((changes) => {
-    setNodes(nds => applyNodeChanges(changes, nds));
-  }, []);
+    const filtered = changes.filter(change => {
+      if (!isNodeLocked(change.id)) return true;
+      return !['position', 'dimensions', 'remove'].includes(change.type);
+    });
+    setNodes(nds => applyNodeChanges(filtered, nds));
+  }, [isNodeLocked]);
 
   const onEdgesChange = useCallback((changes) => {
     setEdges(eds => applyEdgeChanges(changes, eds));
   }, []);
 
-  /* Add selected prop to nodes for styling */
-  const nodesWithSelection = useMemo(() => {
-    return nodes.map(node => ({
-      ...node,
-      selected: node.id === selectedId,
-    }));
-  }, [nodes, selectedId]);
-
   const onConnect = useCallback((params) => {
+    if (isNodeLocked(params.source) || isNodeLocked(params.target)) return;
     // Remove any existing edge from the same source handle (prevent 1→many)
     setEdges(eds => {
       const filtered = eds.filter(e =>
@@ -392,23 +456,35 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
       );
       return addEdge({ ...params, ...defaultEdgeOptions }, filtered);
     });
+    
+    // Update node data based on connection type
     setNodes(nds => nds.map(n => {
-      if (n.id !== params.source) return n;
-      // start / puzzle node — single nextNodeId
-      if (n.type === 'puzzle_node' || n.type === 'start_node') {
-        return { ...n, data: { ...n.data, nextNodeId: params.target } };
+      // Source node updates
+      if (n.id === params.source) {
+        // AI node connecting to puzzle node
+        if (n.type === 'ai_node' && params.targetHandle === 'ai-input') {
+          return { ...n, data: { ...n.data, targetPuzzleId: params.target } };
+        }
+        // Regular flow connections
+        if (n.type === 'puzzle_node' || n.type === 'start_node') {
+          return { ...n, data: { ...n.data, nextNodeId: params.target } };
+        }
+        // choice node — per-choice handle (id = "choice-<idx>")
+        if (n.type === 'choice_node' && params.sourceHandle?.startsWith('choice-')) {
+          const idx = parseInt(params.sourceHandle.split('-')[1], 10);
+          const choices = (n.data.choices || []).map((c, i) =>
+            i === idx ? { ...c, nextNodeId: params.target } : c
+          );
+          return { ...n, data: { ...n.data, choices } };
+        }
       }
-      // choice node — per-choice handle (id = "choice-<idx>")
-      if (n.type === 'choice_node' && params.sourceHandle?.startsWith('choice-')) {
-        const idx = parseInt(params.sourceHandle.split('-')[1], 10);
-        const choices = (n.data.choices || []).map((c, i) =>
-          i === idx ? { ...c, nextNodeId: params.target } : c
-        );
-        return { ...n, data: { ...n.data, choices } };
-      }
+      
+      // Target node updates (currently none needed for puzzle nodes)
+      // AI connections are tracked via AI node's targetPuzzleId
+      
       return n;
     }));
-  }, []);
+  }, [isNodeLocked]);
 
   const onNodeClick = useCallback((_evt, node) => {
     setSelectedId(node.id);
@@ -420,16 +496,212 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
 
   /* ── data updates from sidebar ── */
   const updateSelectedData = useCallback((updates) => {
+    if (!selectedId || isNodeLocked(selectedId)) return;
     setNodes(nds => nds.map(n => n.id === selectedId ? { ...n, data: { ...n.data, ...updates } } : n));
-  }, [selectedId]);
+  }, [selectedId, isNodeLocked]);
 
   /* ── delete selected node + its edges ── */
   const deleteSelected = useCallback(() => {
     if (!selectedId) return;
+    if (isNodeLocked(selectedId)) return;
     setNodes(nds => nds.filter(n => n.id !== selectedId));
     setEdges(eds => eds.filter(e => e.source !== selectedId && e.target !== selectedId));
     setSelectedId(null);
-  }, [selectedId]);
+  }, [selectedId, isNodeLocked]);
+
+  const handleAiSessionKeyChange = useCallback((aiNodeId, value) => {
+    setAiSessionKeys(prev => ({ ...prev, [aiNodeId]: value }));
+  }, []);
+
+  const handleListModels = useCallback(async (aiNodeId) => {
+    const apiKey = (aiSessionKeys[aiNodeId] || '').trim();
+    if (!apiKey) {
+      setAiModelsByNode(prev => ({
+        ...prev,
+        [aiNodeId]: { error: 'Enter an API key to list models for your account.' }
+      }));
+      return;
+    }
+
+    setAiModelsLoading(prev => ({ ...prev, [aiNodeId]: true }));
+    try {
+      const models = await listGeminiModels({ apiKey });
+      setAiModelsByNode(prev => ({
+        ...prev,
+        [aiNodeId]: { items: models }
+      }));
+      const firstModel = models[0]?.normalizedName || models[0]?.name;
+      if (firstModel) {
+        setNodes(nds => nds.map(n => {
+          if (n.id !== aiNodeId) return n;
+          const aiConfig = n.data?.aiConfig || {};
+          if (aiConfig.model) return n;
+          return { ...n, data: { ...n.data, aiConfig: { ...aiConfig, model: firstModel } } };
+        }));
+      }
+    } catch (error) {
+      setAiModelsByNode(prev => ({
+        ...prev,
+        [aiNodeId]: { error: error.message || 'Failed to list models.' }
+      }));
+    } finally {
+      setAiModelsLoading(prev => ({ ...prev, [aiNodeId]: false }));
+    }
+  }, [aiSessionKeys]);
+
+  const ensureFallbackModels = useCallback(async () => {
+    if (fallbackModelsLoading) return fallbackModels || [];
+    if (fallbackModels && fallbackModels.length > 0) return fallbackModels;
+
+    setFallbackModelsLoading(true);
+    try {
+      const models = await listGeminiModels();
+      const normalized = models.map(m => m.normalizedName || m.name).filter(Boolean);
+      setFallbackModels(normalized);
+      return normalized;
+    } catch (error) {
+      setFallbackModels([]);
+      return [];
+    } finally {
+      setFallbackModelsLoading(false);
+    }
+  }, [fallbackModels, fallbackModelsLoading]);
+
+  const handleAIPlay = useCallback(async (aiNodeId) => {
+    const aiNode = nodes.find(n => n.id === aiNodeId);
+    if (!aiNode) return;
+
+    const prompt = aiNode.data?.aiConfig?.prompt?.trim();
+    if (!prompt) {
+      setAiRuns(prev => ({ ...prev, [aiNodeId]: { status: 'error', message: 'Add instructions first.' } }));
+      return;
+    }
+
+    const targetId = aiNode.data?.targetPuzzleId?.trim();
+    if (!targetId) {
+      setAiRuns(prev => ({ ...prev, [aiNodeId]: { status: 'error', message: 'Connect a puzzle node.' } }));
+      return;
+    }
+
+    const targetNode = nodes.find(n => n.id === targetId);
+    if (!targetNode) {
+      setAiRuns(prev => ({ ...prev, [aiNodeId]: { status: 'error', message: 'Target node missing.' } }));
+      return;
+    }
+
+    if (targetNode.type !== 'puzzle_node') {
+      setAiRuns(prev => ({ ...prev, [aiNodeId]: { status: 'error', message: 'Target must be a puzzle node.' } }));
+      return;
+    }
+
+    const sessionKey = (aiSessionKeys[aiNodeId] || '').trim();
+    const selectedModel = aiNode.data?.aiConfig?.model || '';
+
+    const runEnhancement = async ({ apiKey, usingFallback, modelFallbacks }) => {
+      setAiRuns(prev => ({
+        ...prev,
+        [aiNodeId]: {
+          status: 'running',
+          targetId,
+          message: usingFallback
+            ? `Enhancing ${targetId} (shared credits)...`
+            : `Enhancing ${targetId}...`
+        }
+      }));
+
+      const result = await executeAIEnhancement(aiNode.data, targetNode.data, {
+        apiKey,
+        model: selectedModel || undefined,
+        modelFallbacks
+      });
+      if (!result?.success) throw new Error(result?.error || 'AI enhancement failed');
+
+      const enhanced = result.data || {};
+      setNodes(nds => nds.map(n => n.id === targetId ? applyAiEnhancementToNode(n, enhanced) : n));
+
+      setAiRuns(prev => ({
+        ...prev,
+        [aiNodeId]: { status: 'success', targetId, message: `Updated ${targetId}.` }
+      }));
+    };
+
+    try {
+      if (sessionKey) {
+        const sessionModels = aiModelsByNode[aiNodeId]?.items || [];
+        const sessionFallbacks = sessionModels.map(m => m.normalizedName || m.name).filter(Boolean);
+        if (sessionFallbacks.length === 0 && !selectedModel) {
+          throw new Error('No available models. Click "List Models" and select one.');
+        }
+        await runEnhancement({
+          apiKey: sessionKey,
+          usingFallback: false,
+          modelFallbacks: sessionFallbacks
+        });
+        return;
+      }
+
+      if (fallbackCredits <= 0) {
+        setAiRuns(prev => ({
+          ...prev,
+          [aiNodeId]: { status: 'error', targetId, message: 'Shared credits exhausted. Enter your own API key.' }
+        }));
+        return;
+      }
+
+      const fallbackList = await ensureFallbackModels();
+      if (fallbackList.length === 0 && !selectedModel) {
+        throw new Error('No available fallback models. Configure a model with your own API key.');
+      }
+      setFallbackCredits(prev => Math.max(0, prev - 1));
+      await runEnhancement({
+        apiKey: null,
+        usingFallback: true,
+        modelFallbacks: fallbackList
+      });
+    } catch (error) {
+      if (sessionKey && fallbackCredits > 0) {
+        const fallbackList = await ensureFallbackModels();
+        if (fallbackList.length === 0 && !selectedModel) {
+          setAiRuns(prev => ({
+            ...prev,
+            [aiNodeId]: { status: 'error', targetId, message: 'No available fallback models.' }
+          }));
+          return;
+        }
+        setFallbackCredits(prev => Math.max(0, prev - 1));
+        try {
+          await runEnhancement({
+            apiKey: null,
+            usingFallback: true,
+            modelFallbacks: fallbackList
+          });
+          return;
+        } catch (fallbackError) {
+          setAiRuns(prev => ({
+            ...prev,
+            [aiNodeId]: { status: 'error', targetId, message: fallbackError.message || 'AI failed.' }
+          }));
+          return;
+        }
+      }
+
+      setAiRuns(prev => ({
+        ...prev,
+        [aiNodeId]: { status: 'error', targetId, message: error.message || 'AI failed.' }
+      }));
+    }
+  }, [nodes, aiSessionKeys, fallbackCredits, aiModelsByNode, ensureFallbackModels]);
+
+  /* Add selected prop to nodes for styling */
+  const nodesWithSelection = useMemo(() => {
+    return nodes.map(node => ({
+      ...node,
+      selected: node.id === selectedId,
+      data: node.type === 'ai_node'
+        ? { ...node.data, aiRuntime: aiRuns[node.id], onPlay: handleAIPlay }
+        : node.data,
+    }));
+  }, [nodes, selectedId, aiRuns, handleAIPlay]);
 
   /* ── add node ── */
   const addNode = useCallback((type, options = {}) => {
@@ -459,8 +731,8 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
       // Get the drop position relative to the ReactFlow canvas
       const reactFlowBounds = e.currentTarget.getBoundingClientRect();
       n.position = {
-        x: e.clientX - reactFlowBounds.left - 100,
-        y: e.clientY - reactFlowBounds.top - 50
+        x: e.clientX - reactFlowBounds.left,
+        y: e.clientY - reactFlowBounds.top
       };
       
       setNodes(nds => [...nds, n]);
@@ -680,6 +952,13 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
           onDelete={deleteSelected}
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
+          aiSessionKey={selected ? aiSessionKeys[selected.id] : ''}
+          onAiSessionKeyChange={(value) => selected && handleAiSessionKeyChange(selected.id, value)}
+          aiModels={selected ? aiModelsByNode[selected.id] : null}
+          onListModels={() => selected && handleListModels(selected.id)}
+          aiModelsLoading={selected ? !!aiModelsLoading[selected.id] : false}
+          fallbackCredits={fallbackCredits}
+          aiRuntime={selected ? aiRuns[selected.id] : null}
         />
       </div>
 
@@ -752,6 +1031,8 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
         <DeployModal
           scenarioJson={exportToMvpJson(nodes, edges, globalSettings)}
           existingDocId={docId}
+          nodes={nodes}
+          edges={edges}
           onClose={() => setShowDeploy(false)}
           onDeployed={(id) => { setDocId(id); alert('Scenario deployed successfully!'); }}
         />
