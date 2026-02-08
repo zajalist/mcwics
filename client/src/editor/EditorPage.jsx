@@ -440,7 +440,11 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
 
   const isNodeLocked = useCallback((nodeId) => lockedNodeIds.has(nodeId), [lockedNodeIds]);
 
-  /* ── F-key preview — press F to preview selected node ── */
+  /* ── Clipboard state for copy/paste/cut ── */
+  const [clipboard, setClipboard] = useState(null);
+  const [copiedNodeId, setCopiedNodeId] = useState(null);
+
+  /* ── Keyboard shortcuts: F (preview), Ctrl+C/X/V/D (copy/cut/paste/duplicate) ── */
   useEffect(() => {
     const handleKeyDown = (e) => {
       const active = document.activeElement;
@@ -450,6 +454,8 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
         active.tagName === 'SELECT' ||
         active.isContentEditable
       );
+
+      // F-key preview
       if (e.key === 'f' || e.key === 'F') {
         if (selected && !showNodePreview && !isTyping) {
           e.preventDefault();
@@ -459,10 +465,69 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
       if (e.key === 'Escape' && showNodePreview) {
         setShowNodePreview(false);
       }
+
+      // Ctrl+C: Copy selected node
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !isTyping && selected) {
+        e.preventDefault();
+        if (isNodeLocked(selected.id)) return;
+        setClipboard({ ...selected });
+        setCopiedNodeId(selected.id);
+        // Visual feedback
+        setTimeout(() => setCopiedNodeId(null), 1000);
+      }
+
+      // Ctrl+X: Cut selected node
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x' && !isTyping && selected) {
+        e.preventDefault();
+        if (isNodeLocked(selected.id)) return;
+        setClipboard({ ...selected });
+        setCopiedNodeId(selected.id);
+        deleteSelected();
+      }
+
+      // Ctrl+V: Paste from clipboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !isTyping && clipboard) {
+        e.preventDefault();
+        const newNode = { 
+          ...clipboard, 
+          id: uid(clipboard.type === 'start_node' ? 'S' : clipboard.type === 'choice_node' ? 'C' : clipboard.type === 'endpoint_node' ? 'E' : clipboard.type === 'ai_node' ? 'AI' : 'P'),
+          position: { 
+            x: clipboard.position.x + 40, 
+            y: clipboard.position.y + 40 
+          },
+          data: { 
+            ...clipboard.data, 
+            id: uid(clipboard.type === 'start_node' ? 'S' : clipboard.type === 'choice_node' ? 'C' : clipboard.type === 'endpoint_node' ? 'E' : clipboard.type === 'ai_node' ? 'AI' : 'P')
+          }
+        };
+        setNodes(nds => [...nds, newNode]);
+        setSelectedId(newNode.id);
+        setCopiedNodeId(null);
+      }
+
+      // Ctrl+D: Duplicate selected node
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && !isTyping && selected) {
+        e.preventDefault();
+        if (isNodeLocked(selected.id)) return;
+        const newNode = { 
+          ...selected, 
+          id: uid(selected.type === 'start_node' ? 'S' : selected.type === 'choice_node' ? 'C' : selected.type === 'endpoint_node' ? 'E' : selected.type === 'ai_node' ? 'AI' : 'P'),
+          position: { 
+            x: selected.position.x + 40, 
+            y: selected.position.y + 40 
+          },
+          data: { 
+            ...selected.data, 
+            id: uid(selected.type === 'start_node' ? 'S' : selected.type === 'choice_node' ? 'C' : selected.type === 'endpoint_node' ? 'E' : selected.type === 'ai_node' ? 'AI' : 'P')
+          }
+        };
+        setNodes(nds => [...nds, newNode]);
+        setSelectedId(newNode.id);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selected, showNodePreview]);
+  }, [selected, showNodePreview, clipboard, isNodeLocked, deleteSelected]);
 
   /* ── React Flow handlers (use built-in apply helpers) ── */
   const onNodesChange = useCallback((changes) => {
@@ -727,11 +792,12 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
     return nodes.map(node => ({
       ...node,
       selected: node.id === selectedId,
+      className: node.id === copiedNodeId ? 'copied-flash' : '',
       data: node.type === 'ai_node'
         ? { ...node.data, aiRuntime: aiRuns[node.id], onPlay: handleAIPlay }
         : node.data,
     }));
-  }, [nodes, selectedId, aiRuns, handleAIPlay]);
+  }, [nodes, selectedId, copiedNodeId, aiRuns, handleAIPlay]);
 
   /* ── add node ── */
   const addNode = useCallback((type, options = {}) => {
@@ -970,6 +1036,37 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
                       <span>{c.label}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </Panel>
+            <Panel position="bottom-right">
+              <div className="shortcuts-panel">
+                <div className="shortcuts-title">⌨️ Shortcuts</div>
+                <div className="shortcuts-list">
+                  <div className="shortcut-item">
+                    <kbd>Ctrl+C</kbd>
+                    <span>Copy</span>
+                  </div>
+                  <div className="shortcut-item">
+                    <kbd>Ctrl+X</kbd>
+                    <span>Cut</span>
+                  </div>
+                  <div className="shortcut-item">
+                    <kbd>Ctrl+V</kbd>
+                    <span>Paste</span>
+                  </div>
+                  <div className="shortcut-item">
+                    <kbd>Ctrl+D</kbd>
+                    <span>Duplicate</span>
+                  </div>
+                  <div className="shortcut-item">
+                    <kbd>F</kbd>
+                    <span>Preview</span>
+                  </div>
+                  <div className="shortcut-item">
+                    <kbd>Del</kbd>
+                    <span>Delete</span>
+                  </div>
                 </div>
               </div>
             </Panel>
