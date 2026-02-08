@@ -1,6 +1,27 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://mcwics.onrender.com/api/:path*" },
-    { "source": "/socket.io/:path*", "destination": "https://mcwics.onrender.com/socket.io/:path*" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://mcwics.onrender.com/api/:path*"
+    },
+    {
+      "source": "/socket.io",
+      "destination": "https://mcwics.onrender.com/socket.io"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://mcwics.onrender.com/socket.io/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/socket.io/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
   ]
 }
