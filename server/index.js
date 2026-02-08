@@ -18,12 +18,46 @@ const scenarioData = JSON.parse(fs.readFileSync(scenarioPath, 'utf-8'));
 
 // ── Express + Socket.io setup ─────────────────────────────
 const app = express();
-app.use(cors());
+
+// CORS configuration for production
+const allowedOrigins = [
+  'http://localhost:5173', // Vite dev
+  'http://localhost:3000', // Alternative dev port
+  'https://mcwics.vercel.app', // Production frontend
+  'https://mcwics-*.vercel.app' // Preview deployments
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches exactly or is a preview deployment
+    if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/mcwics-.*\.vercel\.app$/)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now during testing
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: { 
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/mcwics-.*\.vercel\.app$/)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all for now during testing
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
   maxHttpBufferSize: 5e6 // 5 MB — custom scenarios can be large
 });
 
