@@ -1086,25 +1086,53 @@ select.input:hover {
   align-items: center;
   gap: 0.7rem;
   padding: 0.75rem 1rem;
-  background: var(--bg-card);
-  border: 2px solid var(--border);
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-input));
+  border: 3px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   text-align: left;
   color: var(--text-primary);
   font-family: var(--font-body);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.role-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--border);
+  transition: all 0.3s ease;
 }
 .role-card:hover:not(:disabled) {
-  border-color: var(--accent-rose);
-  background: var(--accent-rose-dim);
+  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, rgba(212,168,85,0.15), rgba(212,168,85,0.08));
   transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(212,168,85,0.4);
+}
+.role-card:hover:not(:disabled)::before {
+  width: 6px;
+  background: var(--accent-gold);
 }
 .role-card.selected {
-  background: var(--accent-rose-dim);
-  border-color: var(--accent-rose);
-  box-shadow: var(--glow-rose);
-  animation: roseGlow 2.5s ease-in-out infinite;
+  background: linear-gradient(135deg, rgba(212,168,85,0.25), rgba(212,168,85,0.15));
+  border-color: var(--accent-gold);
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(212,168,85,0.3), 0 4px 20px rgba(212,168,85,0.4);
+  animation: roleGlow 2.5s ease-in-out infinite;
+}
+.role-card.selected::before {
+  width: 6px;
+  background: linear-gradient(180deg, var(--accent-gold), var(--accent-amber));
+}
+
+@keyframes roleGlow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212,168,85,0.3), 0 4px 20px rgba(212,168,85,0.4); }
+  50% { box-shadow: 0 0 0 3px rgba(212,168,85,0.5), 0 6px 28px rgba(212,168,85,0.6); }
 }
 .role-card.taken {
   opacity: 0.35;
@@ -1123,18 +1151,40 @@ select.input:hover {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(210,188,118,0.18);
-  border: 2px solid var(--border-gold);
+  background: linear-gradient(135deg, rgba(212,168,85,0.25), rgba(212,168,85,0.15));
+  border: 3px solid var(--accent-gold);
   color: var(--accent-gold);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(212,168,85,0.3);
+  transition: all 0.3s ease;
+}
+.role-card:hover:not(:disabled) .role-emoji {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(212,168,85,0.5);
+  border-color: var(--accent-amber);
+}
+.role-card.selected .role-emoji {
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-amber));
+  color: var(--bg-dark);
+  border-color: var(--accent-amber);
+  box-shadow: 0 4px 16px rgba(212,168,85,0.6);
 }
 .role-name {
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+.role-card.selected .role-name {
+  color: var(--accent-gold);
 }
 .role-tagline {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.role-card.selected .role-tagline {
+  color: var(--accent-gold-dim);
 }
 .role-taken-label {
   margin-left: auto;
