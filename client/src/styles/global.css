@@ -1282,6 +1282,27 @@ select.input {
   max-height: calc(100vh - 120px);
 }
 
+.game-right.with-puzzle-bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.game-right.with-puzzle-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.72);
+  backdrop-filter: blur(2px);
+  z-index: 0;
+}
+
+.game-right.with-puzzle-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* ── Start Intro (start_node) ────────────────────────────── */
 .start-intro {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1856,33 +1877,31 @@ select.input {
 }
 
 .nav-brand-text {
-  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   font-family: var(--font-display);
   margin-left: 0.5rem;
   transition: all 0.3s;
-  display: inline-block;
-  position: relative;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
   user-select: none;
 }
 
-.nav-brand-text::before {
-  content: 'LOCK';
-  position: absolute;
-  left: 0;
-  color: var(--accent-forest);
-  -webkit-text-stroke: 2px #e8dcc8;
-  paint-order: stroke fill;
+.nav-brand-text .title-lock,
+.nav-brand-text .title-step {
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
-.nav-brand-text::after {
-  content: 'STEP';
-  position: absolute;
-  left: 3.2em;
-  color: #e8dcc8;
+.nav-brand-text .title-lock {
+  -webkit-text-stroke: 2px #887C63;
+  text-shadow: 0 0 10px rgba(55,78,68,0.25);
+}
+
+.nav-brand-text .title-step {
+  text-shadow: 0 0 10px rgba(232,220,200,0.18);
 }
 
 .nav-brand:hover .nav-logo {

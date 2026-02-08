@@ -13,7 +13,10 @@ export default function NavBar({ currentPath, onNavigate }) {
       <div className="nav-left">
         <button className="nav-brand" onClick={() => onNavigate('home')}>
           <img src={starLogo} alt="LockStep" className="nav-logo" />
-          <span className="nav-brand-text">Lockstep</span>
+          <span className="nav-brand-text">
+            <span className="title-lock">LOCK</span>
+            <span className="title-step">STEP</span>
+          </span>
         </button>
       </div>
 

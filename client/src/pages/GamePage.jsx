@@ -66,6 +66,13 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
     ? Object.entries(puzzleAssignments).filter(([_, pid]) => pid === playerId).map(([puzzleId]) => puzzleId)
     : null;
 
+  const puzzleBackgroundUrl = currentNode.type === 'puzzle_node'
+    ? currentNode.backgroundImageUrl || ''
+    : '';
+  const puzzleBackgroundStyle = puzzleBackgroundUrl
+    ? { backgroundImage: `url(${puzzleBackgroundUrl})` }
+    : undefined;
+
   return (
     <div className="page game-page">
       <div className="game-layout">
@@ -127,7 +134,7 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
           </div>
 
           {/* Right: Puzzle / Choice area */}
-          <div className="game-right">
+          <div className={`game-right ${puzzleBackgroundUrl ? 'with-puzzle-bg' : ''}`} style={puzzleBackgroundStyle}>
             {currentNode.type === 'start_node' ? (
               <div className="start-intro">
                 <h2>{currentNode.story?.title || 'Mission Briefing'}</h2>

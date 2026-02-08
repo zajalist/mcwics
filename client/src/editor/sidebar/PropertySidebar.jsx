@@ -295,6 +295,22 @@ export function PropertySidebar({
       {isPuzzle && (
         <>
           <div className="section">
+            <div className="section-title">Puzzle Background</div>
+            <div className="form-group">
+              <label className="label">Background Image URL</label>
+              <input
+                className="input"
+                value={data.backgroundImageUrl || ''}
+                onChange={e => set('backgroundImageUrl', e.target.value)}
+                placeholder="Optional: URL to a background image"
+              />
+              <p className="sidebar-hint">
+                Shown behind the puzzle panel during gameplay. Use a wide image for best results.
+              </p>
+            </div>
+          </div>
+
+          <div className="section">
             <div className="section-title">Role Clues</div>
             {(data.roleClues || []).map((rc, idx) => (
               <div key={idx} className="role-clue-row">

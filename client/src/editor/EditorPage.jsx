@@ -48,7 +48,7 @@ function makeNode(type, extraPos = 0, options = {}) {
 
   const dataByType = {
     start_node:    { id, location: 'Scenario Intro', story: { ...story, title: 'Mission Briefing' }, nextNodeId: '' },
-    puzzle_node:   { id, location: 'New Puzzle', story, roleClues: [], puzzles: [], nextNodeId: '' },
+    puzzle_node:   { id, location: 'New Puzzle', story, roleClues: [], puzzles: [], nextNodeId: '', backgroundImageUrl: '' },
     choice_node:   { id, location: 'New Choice', story, choices: [{ id: `${id}_C1`, label: 'Option 1', nextNodeId: '' }] },
     endpoint_node: { id, location: options.outcome === 'fail' ? 'Defeat' : 'Victory', outcome: options.outcome || 'win', story: { ...story, title: options.outcome === 'fail' ? 'Game Over' : 'You Win' }, mediaUrl: '' },
     ai_node:       { id, location: 'AI Enhancer', aiConfig: { prompt: '', enhances: ['improveText', 'addImages'] }, targetPuzzleId: '' },
