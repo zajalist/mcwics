@@ -477,6 +477,26 @@ select.input {
   max-height: calc(100vh - 120px);
 }
 
+/* ── Start Intro (start_node) ────────────────────────────── */
+.start-intro {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 3rem 2rem; min-height: 300px;
+}
+.start-intro h2 {
+  font-size: 1.8rem; color: var(--accent-blue); margin-bottom: 1.2rem;
+}
+.start-text {
+  color: var(--text-secondary); line-height: 1.8; font-size: 1.05rem;
+  max-width: 600px; margin-bottom: 1rem;
+}
+.start-narration {
+  color: var(--text-muted); font-style: italic; font-size: 0.95rem;
+  max-width: 500px; margin-bottom: 2rem;
+}
+.start-continue {
+  font-size: 1.1rem; padding: 0.8rem 2.5rem;
+}
+
 /* ── Story Panel ─────────────────────────────────────────── */
 .story-panel {
   margin-bottom: 1.5rem;

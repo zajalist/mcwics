@@ -1,0 +1,171 @@
+/* ── Editor Layout ────────────────────────────────────────── */
+.editor-page { display: flex; flex-direction: column; height: 100vh; background: var(--bg-dark); }
+
+/* header */
+.editor-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+.editor-header h1 { font-size: 1.15rem; color: var(--accent-blue); letter-spacing: 0.02em; }
+.editor-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.editor-actions .file-btn { position: relative; overflow: hidden; cursor: pointer; }
+.editor-actions .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.toolbar-sep { width: 1px; height: 1.4rem; background: var(--border); margin: 0 0.2rem; }
+
+/* small buttons */
+.btn-sm { font-size: 0.8rem; padding: 0.3rem 0.7rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.btn-sm:hover { background: var(--bg-input); border-color: var(--accent-blue); }
+.btn-sm.btn-primary { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+.btn-sm.btn-primary:hover { background: #2563eb; }
+.btn-sm.btn-win { border-color: var(--accent-green); color: var(--accent-green); }
+.btn-sm.btn-win:hover { background: rgba(16,185,129,0.1); }
+.btn-sm.btn-fail { border-color: var(--accent-red); color: var(--accent-red); }
+.btn-sm.btn-fail:hover { background: rgba(239,68,68,0.1); }
+.btn-sm.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-sm.btn-danger:hover { background: #dc2626; }
+.btn-xs { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; }
+.btn-xs:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+.btn-xs.btn-ghost { border: none; color: var(--text-muted); }
+.btn-xs.btn-ghost:hover { color: var(--danger); }
+
+/* validation banner */
+.validation-banner {
+  position: relative;
+  background: rgba(239,68,68,0.08);
+  border-bottom: 1px solid var(--danger);
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: var(--danger);
+  flex-shrink: 0;
+}
+.validation-banner strong { display: block; margin-bottom: 0.3rem; }
+.validation-banner ul { margin: 0; padding-left: 1.2rem; }
+.validation-banner li { margin-bottom: 0.15rem; }
+.banner-close {
+  position: absolute; top: 0.45rem; right: 0.6rem;
+  background: none; border: none; color: var(--danger); font-size: 1.1rem;
+  cursor: pointer; line-height: 1; padding: 0.1rem 0.3rem; border-radius: 4px;
+}
+.banner-close:hover { background: rgba(239,68,68,0.15); }
+
+/* body */
+.editor-body { display: flex; flex: 1; min-height: 0; }
+.editor-canvas { flex: 1; position: relative; }
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+.editor-sidebar {
+  width: 380px; min-width: 320px; max-width: 420px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  padding: 0.8rem 1rem;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.sidebar-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; font-size: 0.95rem;
+  color: var(--accent-amber);
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-empty { color: var(--text-muted); font-size: 0.9rem; }
+.sidebar-hint { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
+
+/* legend */
+.sidebar-legend { margin-top: 1.5rem; }
+.legend-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot-start  { background: #a855f7; }
+.dot-puzzle { background: var(--accent-blue); }
+.dot-choice { background: var(--accent-amber); }
+.dot-win    { background: var(--accent-green); }
+.dot-fail   { background: var(--accent-red); }
+
+/* form */
+.form-group { margin-bottom: 0.6rem; }
+.form-group .label { display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.form-group .input, .form-group textarea.input {
+  width: 100%; padding: 0.35rem 0.5rem;
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-primary); font-size: 0.85rem; font-family: var(--font-body);
+  outline: none; transition: border-color 0.15s;
+}
+.form-group .input:focus, .form-group textarea.input:focus { border-color: var(--accent-blue); }
+.section { margin-top: 0.8rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.section-title { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600; }
+.role-clue-row, .choice-row { display: flex; gap: 0.35rem; align-items: center; margin-bottom: 0.35rem; }
+.role-select { max-width: 110px; }
+.role-actions { display: flex; gap: 0.3rem; margin-top: 0.3rem; flex-wrap: wrap; }
+
+/* ── Nodes (custom React Flow nodes) ──────────────────────── */
+.editor-node {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  min-width: 200px; max-width: 260px;
+  padding: 0.55rem 0.65rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 0.85rem;
+}
+.editor-node:hover { box-shadow: 0 2px 14px rgba(59,130,246,0.15); }
+.editor-node.invalid { border-color: var(--danger); box-shadow: 0 0 10px rgba(239,68,68,0.25); }
+
+/* type-specific borders on hover / selected */
+.start-node  { border-color: #a855f7; background: rgba(168,85,247,0.06); }
+.puzzle-node { border-color: var(--accent-blue); }
+.choice-node { border-color: var(--accent-amber); }
+.win-node    { border-color: var(--accent-green); background: rgba(16,185,129,0.06); }
+.fail-node   { border-color: var(--accent-red);   background: rgba(239,68,68,0.06); }
+
+/* puzzle type tags */
+.puzzle-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.2rem; }
+.puzzle-tag { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; background: rgba(59,130,246,0.15); color: var(--accent-blue); white-space: nowrap; }
+
+/* puzzle editing blocks in sidebar */
+.puzzle-edit-block { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem; margin-bottom: 0.5rem; }
+.puzzle-edit-header { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.35rem; }
+.puzzle-edit-header select { flex: 1; }
+.puzzle-prompt { margin-bottom: 0.3rem; }
+.puzzle-options { margin-top: 0.3rem; }
+.puzzle-config { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.3rem; }
+.puzzle-add-row { display: flex; gap: 0.3rem; align-items: center; margin-top: 0.3rem; }
+.puzzle-add-row select { flex: 1; }
+.option-label-row { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+.option-row { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.2rem; }
+.option-row input[type="checkbox"] { width: auto; accent-color: var(--accent-green); }
+
+/* start button */
+.btn-sm.btn-start { border-color: #a855f7; color: #a855f7; }
+.btn-sm.btn-start:hover { background: rgba(168,85,247,0.1); }
+
+.dim { opacity: 0.5; }
+
+.node-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+.node-type { font-weight: 700; }
+.node-id { font-family: var(--font-mono); font-size: 0.72rem; }
+.node-title { font-weight: 700; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+.choice-list { list-style: none; margin: 0.2rem 0 0; padding: 0; position: relative; }
+.choice-list li.choice-item { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 0.15rem 0; position: relative; }
+.choice-label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.choice-next { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.72rem; }
+.choice-next.missing { color: var(--danger); }
+.choice-idx { font-size: 0.72rem; color: var(--text-muted); min-width: 1.1rem; }
+
+.hint { color: var(--text-muted); font-size: 0.78rem; background: var(--bg-panel); padding: 0.3rem 0.6rem; border-radius: var(--radius); border: 1px solid var(--border); }
+
+/* ── React Flow overrides ─────────────────────────────────── */
+.react-flow__minimap { border: 1px solid var(--border) !important; border-radius: var(--radius) !important; }
+.react-flow__controls { border: 1px solid var(--border) !important; border-radius: var(--radius) !important; background: var(--bg-panel) !important; }
+.react-flow__controls button { background: var(--bg-card) !important; color: var(--text-primary) !important; border-bottom: 1px solid var(--border) !important; }
+.react-flow__controls button:hover { background: var(--bg-input) !important; }
+.react-flow__handle { width: 10px; height: 10px; background: var(--accent-blue); border: 2px solid var(--bg-card); }
+.react-flow__edge-path { stroke-width: 2; }
+

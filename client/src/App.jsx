@@ -3,12 +3,15 @@ import socket from './socket';
 import HomePage from './pages/HomePage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
+// Editor route (constraint: only add route here)
+import EditorPage from './editor/EditorPage';
 
 export default function App() {
   const [page, setPage] = useState('home'); // home | lobby | game
   const [roomState, setRoomState] = useState(null);
   const [playerId, setPlayerId] = useState(null);
   const [gameOver, setGameOver] = useState(null);
+  const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
     socket.connect();
@@ -31,6 +34,13 @@ export default function App() {
     };
   }, []);
 
+  // Listen to path changes (very lightweight routing)
+  useEffect(() => {
+    const onPop = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   // Update page when phase changes
   useEffect(() => {
     if (roomState?.phase === 'playing' && page === 'lobby') {
@@ -51,6 +61,11 @@ export default function App() {
     socket.disconnect();
     socket.connect();
   }, []);
+
+  // Route: /editor → Scenario Editor
+  if (path === '/editor') {
+    return <EditorPage />;
+  }
 
   if (page === 'home') {
     return <HomePage onRoomJoined={handleRoomJoined} />;

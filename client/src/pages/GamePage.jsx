@@ -1,4 +1,5 @@
 import React from 'react';
+import socket from '../socket';
 import MeterPanel from '../components/MeterPanel';
 import StoryPanel from '../components/StoryPanel';
 import RoleCluePanel from '../components/RoleCluePanel';
@@ -57,7 +58,16 @@ export default function GamePage({ roomState, playerId, gameOver, onBackToHome }
 
           {/* Right: Puzzle / Choice area */}
           <div className="game-right">
-            {currentNode.type === 'choice_node' ? (
+            {currentNode.type === 'start_node' ? (
+              <div className="start-intro">
+                <h2>{currentNode.story?.title || 'Mission Briefing'}</h2>
+                {currentNode.story?.text && <p className="start-text">{currentNode.story.text}</p>}
+                {currentNode.story?.narrationText && <p className="start-narration">{currentNode.story.narrationText}</p>}
+                <button className="btn btn-primary start-continue" onClick={() => socket.emit('ADVANCE_NODE', {}, () => {})}>
+                  Begin Mission →
+                </button>
+              </div>
+            ) : currentNode.type === 'choice_node' ? (
               <ChoiceNode choices={currentNode.choices} />
             ) : currentNode.type === 'puzzle_node' ? (
               <PuzzlePanel
