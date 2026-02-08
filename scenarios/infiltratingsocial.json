@@ -1,0 +1,128 @@
+{
+  "version": "1.0",
+  "gameId": "editor_export",
+  "roles": [
+    {
+      "id": "builder",
+      "name": "Builder",
+      "tagline": "Fixes systems and restores function."
+    },
+    {
+      "id": "pathfinder",
+      "name": "Pathfinder",
+      "tagline": "Navigates routes and commits team choices."
+    },
+    {
+      "id": "decoder",
+      "name": "Decoder",
+      "tagline": "Interprets clues, patterns, and logs."
+    },
+    {
+      "id": "coordinator",
+      "name": "Coordinator",
+      "tagline": "Manages risk, resources, and stabilization."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "edited_scenario",
+      "title": "Edited Scenario",
+      "description": "Exported from LockStep Scenario Editor",
+      "globals": {
+        "vars": {
+          "oxygen": 100,
+          "water": 0,
+          "alert": 0,
+          "attemptsLeft": 4
+        },
+        "failConditions": []
+      },
+      "startNodeId": "S1",
+      "nodes": [
+        {
+          "id": "S1",
+          "type": "start_node",
+          "location": "Scenario Intro",
+          "story": {
+            "title": "Infiltrating Social Portfolio of MSA McGill",
+            "text": "Breach the campus social silos and establish a unified network of student operatives.",
+            "narrationText": "Breach the campus social silos and establish a unified network of student operatives."
+          },
+          "nextNodeId": "C3"
+        },
+        {
+          "id": "P2",
+          "type": "puzzle_node",
+          "location": "New Puzzle",
+          "story": {
+            "title": "nothing special",
+            "text": "nothing special",
+            "narrationText": "nothing special"
+          },
+          "roleClues": [
+            {
+              "roleId": "builder",
+              "text": "Hello word"
+            }
+          ],
+          "puzzles": [
+            {
+              "id": "P2_P1",
+              "type": "logic_match",
+              "prompt": "What's 9+10",
+              "effectsOnSuccess": [],
+              "effectsOnFail": [],
+              "validation": {
+                "mode": "exact",
+                "answer": "21"
+              }
+            }
+          ],
+          "nextNodeId": "W5"
+        },
+        {
+          "id": "C3",
+          "type": "choice_node",
+          "location": "MSA Musallah",
+          "story": {
+            "title": "Go to the office",
+            "text": "Should you go to the office, knowing that Mikael is in there and does not want you to enter the office because he is doing a social meeting",
+            "narrationText": "Should you go to the office, knowing that Mikael is in there and does not want you to enter the office because he is doing a social meeting"
+          },
+          "choices": [
+            {
+              "id": "C3_C1",
+              "label": "Go to the Musallah",
+              "nextNodeId": "F4"
+            },
+            {
+              "id": "C3_C2",
+              "label": "Do not go to the musallah",
+              "nextNodeId": "P2"
+            }
+          ]
+        },
+        {
+          "id": "F4",
+          "type": "fail_node",
+          "location": "Defeat",
+          "story": {
+            "title": "Game Over",
+            "text": "You discover Mikael and he is angry",
+            "narrationText": ""
+          }
+        },
+        {
+          "id": "W5",
+          "type": "win_node",
+          "location": "Victory",
+          "story": {
+            "title": "You Win",
+            "text": "",
+            "narrationText": ""
+          }
+        }
+      ]
+    }
+  ]
+}

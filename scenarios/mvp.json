@@ -75,8 +75,19 @@
           { "type": "timerExpired", "reason": "You ran out of time." }
         ]
       },
-      "startNodeId": "A1",
+      "startNodeId": "A0",
       "nodes": [
+        {
+          "id": "A0",
+          "type": "start_node",
+          "location": "Submarine — Mission Briefing",
+          "story": {
+            "title": "The Sinking Submarine",
+            "text": "You are trapped aboard a flooding military submarine. Emergency power is failing, oxygen is depleting, and the only escape hatch is on the opposite end of the vessel. Your team must work together — solving puzzles, unlocking doors, and making critical choices — to reach the hatch before the sub goes down.",
+            "narrationText": "Klaxons blare. The hull groans. Somewhere deep below, the ocean is finding its way in."
+          },
+          "nextNodeId": "A1"
+        },
         {
           "id": "A1",
           "type": "puzzle_node",
@@ -331,8 +342,19 @@
           { "type": "lte", "var": "attemptsLeft", "value": 0, "reason": "Too many failed attempts. The AI locked down and caught you." }
         ]
       },
-      "startNodeId": "B1",
+      "startNodeId": "B0",
       "nodes": [
+        {
+          "id": "B0",
+          "type": "start_node",
+          "location": "AI Compound — Mission Briefing",
+          "story": {
+            "title": "The AI Dystopia",
+            "text": "The year is 2087. A rogue AI called ARCHON controls the city. Your covert team has one chance to infiltrate its compound, locate the master key, and shut it down from the inside. But ARCHON is always watching — every wrong move raises the alert level. Work together, move carefully, and outsmart the machine.",
+            "narrationText": "The compound hums with electric menace. Cameras sweep. Your comms crackle with static."
+          },
+          "nextNodeId": "B1"
+        },
         {
           "id": "B1",
           "type": "choice_node",

@@ -230,6 +230,17 @@ class GameEngine {
     const node = this.getCurrentNode(room);
     if (!node) return { error: 'No current node' };
 
+    // Start nodes always advance (no puzzles to solve)
+    if (node.type === 'start_node') {
+      if (!node.nextNodeId) return { error: 'Start node has no nextNodeId' };
+      room.gameState.currentNodeId = node.nextNodeId;
+      const newNode = this.getCurrentNode(room);
+      if (newNode && newNode.autoEffects) {
+        this._applyEffects(room, newNode.autoEffects);
+      }
+      return { ok: true, nextNodeId: node.nextNodeId };
+    }
+
     // For puzzle nodes: only advance if all puzzles solved (or node has no puzzles)
     if (node.type === 'puzzle_node' && node.puzzles && node.puzzles.length > 0) {
       const allSolved = node.puzzles.every(p => room.gameState.solvedPuzzles.includes(p.id));
