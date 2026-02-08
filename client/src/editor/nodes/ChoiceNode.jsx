@@ -2,13 +2,13 @@ import React from 'react';
 import { Zap, ArrowRight } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
-export function ChoiceNode({ data }) {
+export function ChoiceNode({ data, selected }) {
   const title = data?.story?.title || data?.location || data?.id;
   const choices = data?.choices || [];
   const invalid = choices.some(c => !c.nextNodeId);
 
   return (
-    <div className={`editor-node choice-node ${invalid ? 'invalid' : ''}`}>
+    <div className={`editor-node choice-node ${invalid ? 'invalid' : ''} ${selected ? 'selected' : ''}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-header">
         <span className="node-type"><Zap size={14} /> Choice</span>

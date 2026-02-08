@@ -1,0 +1,1135 @@
+/* ==============================================
+   HOME PAGE ANIMATED DEMO SECTION
+   ============================================== */
+
+.demo-section {
+  padding: 8rem 1.5rem;
+  max-width: 1500px;
+  margin: 0 auto;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  min-height: 90vh;
+}
+
+.demo-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.demo-container {
+  margin-top: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 7rem;
+}
+
+.demo-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.demo-feature.reverse {
+  direction: rtl;
+}
+
+.demo-feature.reverse > * {
+  direction: ltr;
+}
+
+.demo-visual {
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-description h3 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--accent-gold);
+  margin-bottom: 1.4rem;
+  line-height: 1.2;
+}
+
+.demo-description p {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* ==============================================
+   NODE DRAG & DROP DEMO
+   ============================================== */
+
+.demo-canvas {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: rgba(58, 52, 43, 0.4);
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  overflow: hidden;
+}
+
+/* Node Palette */
+.node-palette {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  width: 140px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 5;
+}
+
+.palette-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.2rem;
+}
+
+.palette-node {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg-dark);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.palette-node:hover {
+  transform: translateX(3px);
+}
+
+.palette-start {
+  border-color: #a371f7;
+  background: rgba(163,113,247,0.08);
+}
+
+.palette-puzzle {
+  border-color: #374E44;
+  background: rgba(55,78,68,0.1);
+}
+
+.demo-node {
+  position: absolute;
+  width: 155px;
+  height: 100px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 2px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0.55rem 0.65rem;
+  opacity: 0;
+  transform: scale(0);
+}
+
+.demo-node.node-1 {
+  border-color: #a371f7;
+  background: rgba(163,113,247,0.08);
+}
+
+.demo-node.node-2 {
+  border-color: #374E44;
+  background: rgba(55,78,68,0.1);
+}
+
+.demo-node.node-3 {
+  border-color: #4a6b54;
+  background: rgba(74,107,84,0.1);
+}
+
+/* Node Handles (Connection Points) */
+.node-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--bg-card);
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.node-handle:hover {
+  transform: scale(1.3);
+}
+
+.handle-left {
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.handle-right {
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Drag & Drop Animation */
+.dragging-node {
+  opacity: 0;
+  border-color: #374E44;
+  background: rgba(55,78,68,0.1);
+  box-shadow: 0 4px 16px rgba(55,78,68,0.4);
+  pointer-events: none;
+}
+
+.visible .dropped-node-1 {
+  top: 180px;
+  left: 50px;
+  animation: dropNode 0.8s ease-out 0.5s forwards;
+}
+
+.visible .dropped-node-2 {
+  top: 150px;
+  left: 300px;
+  animation: dropNode 0.8s ease-out 2.5s forwards;
+}
+
+.visible .dropped-node-1 .node-handle,
+.visible .dropped-node-2 .node-handle {
+  animation: fadeIn 0.4s ease-out 1.8s forwards;
+}
+
+.visible .dragging-node {
+  animation: dragNode 2s ease-in-out 1.5s forwards;
+}
+
+@keyframes dropNode {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dragNode {
+  0% {
+    opacity: 0;
+    left: 75px;
+    top: 155px;
+    transform: scale(0.8);
+  }
+  10% {
+    opacity: 0.7;
+  }
+  30% {
+    left: 150px;
+    top: 165px;
+  }
+  50% {
+    left: 250px;
+    top: 165px;
+  }
+  70% {
+    opacity: 0.7;
+    left: 300px;
+    top: 180px;
+  }
+  100% {
+    opacity: 0;
+    left: 300px;
+    top: 180px;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Cursor for Drag Animation */
+.demo-cursor.cursor-drag {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.visible .cursor-drag {
+  animation: dragCursorMove 4s ease-in-out 0.3s forwards;
+}
+
+@keyframes dragCursorMove {
+  0%, 5% {
+    opacity: 0;
+    left: 75px;
+    top: 135px;
+  }
+  8% {
+    opacity: 1;
+  }
+  12%, 20% {
+    left: 75px;
+    top: 155px;
+  }
+  35% {
+    left: 150px;
+    top: 165px;
+  }
+  55% {
+    left: 250px;
+    top: 165px;
+  }
+  75% {
+    left: 300px;
+    top: 180px;
+  }
+  85%, 95% {
+    left: 300px;
+    top: 180px;
+  }
+  100% {
+    opacity: 0;
+    left: 300px;
+    top: 180px;
+  }
+}
+
+/* ==============================================
+   NODE CONNECTION DEMO
+   ============================================== */
+
+.demo-canvas-connect {
+  background: rgba(58, 52, 43, 0.4);
+}
+
+.connect-node-1 {
+  border-color: #a371f7;
+  background: rgba(163,113,247,0.08);
+}
+
+.connect-node-2 {
+  border-color: #374E44;
+  background: rgba(55,78,68,0.1);
+}
+
+.visible .connect-node-1 {
+  top: 70px;
+  left: 50px;
+  animation: popIn 0.6s ease-out 0.3s forwards;
+}
+
+.visible .connect-node-2 {
+  top: 70px;
+  left: 340px;
+  animation: popIn 0.6s ease-out 0.8s forwards;
+}
+
+.visible .connect-node-1 .node-handle,
+.visible .connect-node-2 .node-handle {
+  animation: fadeIn 0.3s ease-out 1.5s forwards, handlePulse 1s ease-in-out 2s infinite;
+}
+
+@keyframes handlePulse {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+    border-color: #3b82f6;
+  }
+  50% {
+    transform: translateY(-50%) scale(1.3);
+    border-color: #60a5fa;
+  }
+}
+
+.connection-path {
+  opacity: 0;
+}
+
+.visible .connection-path {
+  animation: drawTempLine 2s ease-out 2.5s forwards;
+}
+
+@keyframes drawTempLine {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    d: path('M 205 120 L 205 120');
+  }
+  100% {
+    opacity: 1;
+    d: path('M 205 120 L 340 120');
+  }
+}
+
+.final-connection {
+  opacity: 0;
+}
+
+.visible .final-connection {
+  animation: drawFinalLine 0.8s ease-out 4.5s forwards;
+}
+
+@keyframes drawFinalLine {
+  0% {
+    opacity: 1;
+    stroke-dashoffset: 200;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Cursor for Connect Animation */
+.demo-cursor.cursor-connect {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.visible .cursor-connect {
+  animation: connectCursorMove 3.5s ease-in-out 1.8s forwards;
+}
+
+@keyframes connectCursorMove {
+  0%, 5% {
+    opacity: 0;
+    left: 205px;
+    top: 120px;
+  }
+  10% {
+    opacity: 1;
+  }
+  15%, 25% {
+    left: 205px;
+    top: 120px;
+  }
+  70% {
+    left: 340px;
+    top: 120px;
+  }
+  80%, 90% {
+    left: 340px;
+    top: 120px;
+  }
+  100% {
+    opacity: 0;
+    left: 340px;
+    top: 120px;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-10deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.node-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.2rem;
+}
+
+.node-type {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.node-id {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.node-icon {
+  color: var(--accent-gold);
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.node-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
+}
+
+.node-sub {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.connection-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ==============================================
+   PUZZLE DEMO
+   ============================================== */
+
+.puzzle-demo {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.puzzle-card {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-forest);
+  border-radius: 12px;
+  padding: 2.8rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.puzzle-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.puzzle-icon {
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.puzzle-icon svg {
+  width: 38px;
+  height: 38px;
+}
+
+.visible .puzzle-icon {
+  animation: iconBounce 2s ease-in-out 0.5s infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.puzzle-title {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  color: var(--accent-gold);
+  line-height: 1.3;
+}
+
+.puzzle-clues {
+  margin-bottom: 1.5rem;
+}
+
+.clue-item {
+  padding: 0.95rem;
+  background: rgba(55, 78, 68, 0.2);
+  border-left: 3px solid var(--accent-gold);
+  margin-bottom: 0.7rem;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  opacity: 0;
+  transform: translateX(-20px);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.1rem;
+}
+
+.clue-icon {
+  color: var(--accent-gold);
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.visible .clue-item:nth-child(1) {
+  animation: slideInLeft 0.6s ease-out 0.8s forwards;
+}
+
+.visible .clue-item:nth-child(2) {
+  animation: slideInLeft 0.6s ease-out 1.2s forwards;
+}
+
+@keyframes slideInLeft {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.puzzle-input {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.code-digit {
+  width: 75px;
+  height: 85px;
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  text-align: center;
+  background: var(--bg-dark);
+  border: 2px solid var(--accent-gold);
+  border-radius: 8px;
+  color: var(--text-primary);
+  transform: scale(0);
+}
+
+.visible .code-digit:nth-child(1) {
+  animation: digitPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) 1.6s forwards;
+}
+
+.visible .code-digit:nth-child(2) {
+  animation: digitPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) 1.9s forwards;
+}
+
+.visible .code-digit:nth-child(3) {
+  animation: digitPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) 2.2s forwards;
+}
+
+@keyframes digitPop {
+  to {
+    transform: scale(1);
+  }
+}
+
+.puzzle-status {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.visible .puzzle-status {
+  animation: statusReveal 0.6s ease-out 2.6s forwards;
+}
+
+@keyframes statusReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  60% {
+    transform: scale(1.1) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==============================================
+   PUZZLE TYPES DEMO
+   ============================================== */
+
+.puzzle-types-demo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  padding: 2rem;
+  background: rgba(58, 52, 43, 0.2);
+  border-radius: 12px;
+  border: 2px solid var(--border);
+}
+
+.puzzle-type-card {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-gold);
+  border-radius: 8px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.puzzle-type-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(212, 168, 85, 0.3);
+}
+
+.puzzle-type-card svg {
+  color: var(--accent-gold);
+}
+
+.type-label {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.visible .puzzle-type-card.type-1 { animation: popIn 0.5s ease-out 0.3s forwards; }
+.visible .puzzle-type-card.type-2 { animation: popIn 0.5s ease-out 0.5s forwards; }
+.visible .puzzle-type-card.type-3 { animation: popIn 0.5s ease-out 0.7s forwards; }
+.visible .puzzle-type-card.type-4 { animation: popIn 0.5s ease-out 0.9s forwards; }
+.visible .puzzle-type-card.type-5 { animation: popIn 0.5s ease-out 1.1s forwards; }
+.visible .puzzle-type-card.type-6 { animation: popIn 0.5s ease-out 1.3s forwards; }
+.visible .puzzle-type-card.type-7 { animation: popIn 0.5s ease-out 1.5s forwards; }
+.visible .puzzle-type-card.type-8 { animation: popIn 0.5s ease-out 1.7s forwards; }
+.visible .puzzle-type-card.type-9 { animation: popIn 0.5s ease-out 1.9s forwards; }
+
+/* ==============================================
+   ROLE-BASED DEMO (OLD - KEEPING FOR FALLBACK)
+   ============================================== */
+
+.roles-demo {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  background: rgba(58, 52, 43, 0.2);
+  border-radius: 12px;
+  border: 2px solid var(--border);
+}
+
+.role-card {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-forest);
+  border-radius: 10px;
+  padding: 2.3rem;
+  width: 300px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(30px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.visible .role-card.role-1 {
+  animation: roleSlideIn 0.6s ease-out 0.6s forwards;
+}
+
+.visible .role-card.role-2 {
+  animation: roleSlideIn 0.6s ease-out 1s forwards;
+}
+
+.visible .role-card.role-3 {
+  animation: roleSlideIn 0.6s ease-out 1.4s forwards;
+}
+
+@keyframes roleSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.role-avatar {
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+
+.role-avatar svg {
+  width: 52px;
+  height: 52px;
+}
+
+.role-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-gold);
+  margin-bottom: 0.7rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.role-clue {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.collaboration-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(74, 107, 84, 0.2);
+  border-radius: 8px;
+  border: 1px solid var(--accent-green);
+  color: var(--text-primary);
+  font-weight: 600;
+  opacity: 0;
+}
+
+.visible .collaboration-indicator {
+  animation: fadeInScale 0.6s ease-out 1.8s forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.collab-pulse {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}
+
+/* ==============================================
+   RESPONSIVE
+   ============================================== */
+
+@media (max-width: 968px) {
+  .demo-section {
+    padding: 5rem 1.5rem;
+  }
+  .demo-container {
+    gap: 5rem;
+  }
+  
+  .puzzle-types-demo {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .demo-feature,
+  .demo-feature.reverse {
+    grid-template-columns: 1fr;
+    direction: ltr;
+    gap: 2.5rem;
+  }
+
+  .demo-description h3 {
+    font-size: 1.8rem;
+  }
+
+  .demo-description p {
+    font-size: 1.05rem;
+  }
+
+  .demo-visual {
+    min-height: 320px;
+  }
+
+  .demo-canvas {
+    height: 280px;
+  }
+
+  .demo-node {
+    width: 100px;
+    height: 70px;
+  }
+
+  .node-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .node-palette {
+    width: 110px;
+    padding: 0.6rem;
+  }
+  
+  .palette-node {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .visible .dropped-node-1 {
+    top: 60px;
+    left: 40px;
+  }
+
+  .visible .dropped-node-2 {
+    top: 40px;
+    left: 200px;
+  }
+  
+  .visible .connect-node-1 {
+    top: 60px;
+    left: 40px;
+  }
+  
+  .visible .connect-node-2 {
+    top: 60px;
+    left: 240px;
+  }
+
+  .node-title {
+    font-size: 0.85rem;
+  }
+
+  .puzzle-card {
+    padding: 2rem;
+  }
+
+  .code-digit {
+    width: 55px;
+    height: 65px;
+    font-size: 1.8rem;
+  }
+
+  .role-card {
+    width: 240px;
+    padding: 1.5rem;
+  }
+
+  .role-avatar svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  .role-name {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .demo-section {
+    padding: 4rem 1rem;
+  }
+
+  .demo-container {
+    gap: 4rem;
+  }
+  
+  .puzzle-types-demo {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
+  }
+  
+  .puzzle-type-card {
+    padding: 1.2rem 1rem;
+  }
+  
+  .puzzle-type-card svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .type-label {
+    font-size: 0.85rem;
+  }
+
+  .demo-description h3 {
+    font-size: 1.5rem;
+  }
+
+  .demo-description p {
+    font-size: 1rem;
+  }
+
+  .demo-canvas {
+    height: 220px;
+  }
+
+  .demo-node {
+    width: 80px;
+    height: 55px;
+  }
+
+  .node-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .node-palette {
+    width: 90px;
+    padding: 0.5rem;
+    left: 10px;
+    top: 10px;
+  }
+  
+  .palette-title {
+    font-size: 0.7rem;
+  }
+  
+  .palette-node {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.7rem;
+    gap: 0.3rem;
+  }
+  
+  .palette-node svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .visible .dropped-node-1 {
+    top: 50px;
+    left: 30px;
+  }
+
+  .visible .dropped-node-2 {
+    top: 30px;
+    left: 150px;
+  }
+  
+  .visible .connect-node-1 {
+    top: 50px;
+    left: 30px;
+  }
+  
+  .visible .connect-node-2 {
+    top: 50px;
+    left: 180px;
+  }
+
+  .node-title {
+    font-size: 0.7rem;
+  }
+
+  .puzzle-card {
+    padding: 1.5rem;
+  }
+
+  .puzzle-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .puzzle-title {
+    font-size: 1.3rem;
+  }
+
+  .clue-item {
+    font-size: 0.95rem;
+    padding: 0.75rem;
+  }
+
+  .clue-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .code-digit {
+    width: 50px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .role-card {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .role-avatar svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .role-name {
+    font-size: 1.2rem;
+  }
+
+  .role-clue {
+    font-size: 0.95rem;
+  }
+}

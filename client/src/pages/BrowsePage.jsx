@@ -3,7 +3,7 @@
 // Users can Play (start scavenge) or Edit (load into editor).
 
 import React, { useEffect, useState } from 'react';
-import { Globe, FolderOpen, AlertTriangle, Lock, GitFork, Play, Pencil, Trash2 } from 'lucide-react';
+import { Globe, FolderOpen, AlertTriangle, Lock, GitFork, Play, Pencil, Trash2, Github, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { listPublicScenarios, listMyScenarios, deleteScenario, forkScenario } from '../services/scenarioService';
 
@@ -65,8 +65,9 @@ export default function BrowsePage({ onNavigate }) {
   const isOwner = (s) => user && s.uid === user.uid;
 
   return (
-    <div className="page browse-page">
-      <div className="browse-container">
+    <>
+      <div className="page browse-page">
+        <div className="browse-container">
         <h1 className="browse-title">Discover Scavenges</h1>
         <p className="browse-subtitle">Play community-created scenarios or create your own</p>
 
@@ -109,8 +110,10 @@ export default function BrowsePage({ onNavigate }) {
                 </div>
                 <p className="scenario-desc">{s.description || 'No description'}</p>
                 <div className="scenario-meta">
-                  <span>by {s.authorName || 'Anonymous'}</span>
-                  {s.forkedFrom && <span className="forked-badge"><GitFork size={14} /> Remix</span>}
+                  <span>
+                    by {s.authorName || 'Anonymous'}
+                    {s.forkedFrom && <span className="forked-badge"><GitFork size={14} /> Remix</span>}
+                  </span>
                   {s.updatedAt?.toDate && (
                     <span>{s.updatedAt.toDate().toLocaleDateString()}</span>
                   )}
@@ -138,7 +141,24 @@ export default function BrowsePage({ onNavigate }) {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+      
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-links">
+            <a href="https://github.com/yourusername/lockstep" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <Github size={16} /> GitHub
+            </a>
+            <a href="https://github.com/yourusername/lockstep/blob/main/docs/specifications.md" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <ExternalLink size={16} /> Documentation
+            </a>
+          </div>
+          <div className="footer-copyright">
+            © {new Date().getFullYear()} LockStep. Built for collaborative scavenger hunts and team learning.
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

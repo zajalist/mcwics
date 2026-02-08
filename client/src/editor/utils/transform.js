@@ -14,16 +14,14 @@ export function validateGraph(nodes, edges) {
     return errors;
   }
 
-  // Identify terminal nodes
-  const winNodes   = nodes.filter(n => n.type === 'win_node');
-  const failNodes  = nodes.filter(n => n.type === 'fail_node');
+  // Identify terminal nodes (endpoint_node or legacy win/fail)
+  const endpointNodes = nodes.filter(n => n.type === 'endpoint_node');
+  const winNodes   = nodes.filter(n => n.type === 'win_node' || (n.type === 'endpoint_node' && n.data.outcome === 'win'));
+  const failNodes  = nodes.filter(n => n.type === 'fail_node' || (n.type === 'endpoint_node' && n.data.outcome === 'fail'));
   const startNodes = nodes.filter(n => n.type === 'start_node');
 
   if (winNodes.length === 0) {
-    errors.push('Missing a Win node — every scenario needs at least one good ending.');
-  }
-  if (failNodes.length === 0) {
-    errors.push('Missing a Fail node — every scenario needs at least one bad ending.');
+    errors.push('Missing a Win endpoint — every scenario needs at least one good ending.');
   }
   if (startNodes.length === 0) {
     errors.push('Missing a Start node — every scenario needs exactly one start node.');
@@ -68,7 +66,7 @@ export function validateGraph(nodes, edges) {
 
 /* ──────────────── EXPORT ──────────────── */
 
-export function exportToMvpJson(nodes, edges) {
+export function exportToMvpJson(nodes, edges, globalSettings = {}) {
   // Build a lookup to derive nextNodeId from edges for puzzle nodes
   const edgesBySource = {};
   for (const e of edges) {
@@ -106,15 +104,66 @@ export function exportToMvpJson(nodes, edges) {
     if (n.type === 'choice_node') {
       return { ...base, choices: n.data.choices || [] };
     }
-    // win_node / fail_node — base + mediaUrl
+    // endpoint_node — export as win_node or fail_node based on outcome
+    if (n.type === 'endpoint_node') {
+      const outcome = n.data.outcome || 'win';
+      return { ...base, type: outcome === 'win' ? 'win_node' : 'fail_node', mediaUrl: n.data.mediaUrl || '' };
+    }
+    // legacy win_node / fail_node — base + mediaUrl
     if (n.type === 'win_node' || n.type === 'fail_node') {
       return { ...base, mediaUrl: n.data.mediaUrl || '' };
     }
     return base;
   });
 
+  // Build vars object from globalSettings.resources
+  const vars = {};
+  if (globalSettings?.resources && Array.isArray(globalSettings.resources)) {
+    for (const res of globalSettings.resources) {
+      vars[res.id] = res.initialValue || 0;
+    }
+  }
+  // Add defaults if not present
+  if (!vars.oxygen && !vars.water) {
+    vars.oxygen = 100;
+    vars.water = 0;
+  }
+
+  // Build fail conditions from resources
+  const failConditions = [];
+  if (globalSettings?.resources && Array.isArray(globalSettings.resources)) {
+    for (const res of globalSettings.resources) {
+      // Most resources fail when they hit 0 or below (like oxygen)
+      // But water-like resources that increase might fail when >= 100
+      if (res.continuousIncrease > 0) {
+        failConditions.push({
+          type: 'gte',
+          var: res.id,
+          value: 100,
+          reason: `${res.label} reached critical levels!`
+        });
+      } else {
+        failConditions.push({
+          type: 'lte',
+          var: res.id,
+          value: 0,
+          reason: `You ran out of ${res.label}!`
+        });
+      }
+    }
+  }
+
+  // Add timer fail condition if timeLimit is set
+  if (globalSettings?.timeLimit && globalSettings.timeLimit > 0) {
+    failConditions.push({
+      type: 'timerExpired',
+      reason: 'You ran out of time!'
+    });
+  }
+
   return {
     version: '1.0',
+    globalSettings: globalSettings || {},
     gameId: 'editor_export',
     roles: [
       { id: 'builder',     name: 'Builder',     tagline: 'Fixes systems and restores function.' },
@@ -127,8 +176,10 @@ export function exportToMvpJson(nodes, edges) {
       title:       'Edited Scenario',
       description: 'Exported from LockStep Scenario Editor',
       globals: {
-        vars: { oxygen: 100, water: 0, alert: 0, attemptsLeft: 4 },
-        failConditions: [],
+        vars: vars,
+        failConditions: failConditions,
+        timerSeconds: (globalSettings?.timeLimit || 0) * 60,
+        resourceMetadata: globalSettings?.resources || []
       },
       startNodeId: startNode?.id || nodes[0]?.id || '',
       nodes: jsonNodes,
@@ -200,12 +251,41 @@ export function importFromMvpJson(json) {
 
   const rawNodes = scenario.nodes || [];
 
-  const nodes = rawNodes.map(n => ({
-    id:   n.id,
-    type: n.type || 'puzzle_node',
-    position: { x: 0, y: 0 }, // will be set by autoLayout
-    data: { ...n },
-  }));
+  const nodes = rawNodes.map(n => {
+    // Convert legacy win_node/fail_node to endpoint_node
+    let nodeType = n.type || 'puzzle_node';
+    let extraData = {};
+    if (nodeType === 'win_node') {
+      nodeType = 'endpoint_node';
+      extraData = { outcome: 'win' };
+    } else if (nodeType === 'fail_node') {
+      nodeType = 'endpoint_node';
+      extraData = { outcome: 'fail' };
+    }
+
+    // Ensure puzzle nodes have puzzles array
+    if (nodeType === 'puzzle_node') {
+      if (!n.puzzles) extraData.puzzles = [];
+      if (!n.roleClues) extraData.roleClues = [];
+    }
+
+    // Ensure choice nodes have choices array
+    if (nodeType === 'choice_node') {
+      if (!n.choices) extraData.choices = [];
+    }
+
+    // Ensure story object exists
+    if (!n.story) {
+      extraData.story = { title: '', text: '', narrationText: '' };
+    }
+
+    return {
+      id:   n.id,
+      type: nodeType,
+      position: { x: 0, y: 0 }, // will be set by autoLayout
+      data: { ...n, ...extraData, type: nodeType },
+    };
+  });
 
   const edges = [];
   for (const n of rawNodes) {
@@ -225,5 +305,9 @@ export function importFromMvpJson(json) {
   }
 
   const laidOut = autoLayout(nodes, edges);
-  return { nodes: laidOut, edges };
+  return { 
+    nodes: laidOut, 
+    edges,
+    globalSettings: json.globalSettings || { timeLimit: 0, resources: [] }
+  };
 }

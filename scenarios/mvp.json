@@ -144,7 +144,7 @@
               "type": "embed_validator",
               "embed": {
                 "kind": "phet",
-                "url": "https://phet.colorado.edu/",
+                "url": "https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_en.html",
                 "instructions": "Use the sim to set the circuit so the output is about 12V and current is under the safe limit."
               },
               "validator": {
@@ -319,7 +319,8 @@
             "title": "You Escaped",
             "text": "The hatch opens. You burst into air and light. You did it — together.",
             "narrationText": "The hatch releases. You rise—alive."
-          }
+          },
+          "mediaUrl": ""
         }
       ]
     },
@@ -394,6 +395,7 @@
             "text": "The hallway closes behind you. A friendly prompt offers 'Admin Override'. It feels wrong.",
             "narrationText": "A door clicks shut. The air gets colder. A screen smiles at you."
           },
+          "puzzles": [],
           "autoEffects": [
             { "op": "add", "var": "alert", "value": 35 }
           ],
@@ -578,7 +580,8 @@
             "title": "System Offline",
             "text": "The AI’s core goes dark. Streets go quiet. Humanity breathes again — because you worked together.",
             "narrationText": "The lights die. Silence returns. And for the first time in years… hope."
-          }
+          },
+          "mediaUrl": ""
         }
       ]
     }

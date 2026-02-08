@@ -1,20 +1,110 @@
-import React from 'react';
-import { Rocket, Puzzle, Zap, Trophy, Skull, Video, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Rocket, Puzzle, Zap, Flag, Video, X, Wand2 } from 'lucide-react';
 import { MAX_CHOICES } from '../nodes/ChoiceNode';
 import { PUZZLE_TYPES } from '../nodes/PuzzleNode';
+import { CIPHER_METHODS, BINARY_METHOD, ASCII_METHOD, EMOJI_METHOD } from '../../utils/cipherUtils';
+import { WORD_MODES, generateWordPuzzle } from '../../utils/wordUtils';
 
-export function PropertySidebar({ selected, onUpdate, onDelete }) {
+/* ── Cipher Generator sub-component ── */
+function CipherGenerator({ puzzle, pIdx, updatePuzzle }) {
+  const [plaintext, setPlaintext] = useState(puzzle.validation?.answer || '');
+  const [method, setMethod] = useState('caesar3');
+
+  const getMethods = () => {
+    if (puzzle.type === 'binary_cipher') return [BINARY_METHOD];
+    if (puzzle.type === 'ascii_cipher') return [ASCII_METHOD];
+    if (puzzle.type === 'emoji_cipher') return [EMOJI_METHOD];
+    return CIPHER_METHODS;
+  };
+
+  const handleGenerate = () => {
+    if (!plaintext.trim()) return;
+    const methods = getMethods();
+    const m = methods.find(cm => cm.id === method) || methods[0];
+    const encoded = m.encode(plaintext.trim());
+    updatePuzzle(pIdx, 'encodedText', encoded);
+    updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: plaintext.trim() });
+    updatePuzzle(pIdx, 'hint', m.hint || '');
+    updatePuzzle(pIdx, 'cipherMethod', m.id);
+  };
+
+  const methods = getMethods();
+
+  return (
+    <div className="puzzle-config">
+      <div className="cipher-gen-row">
+        <input className="input" placeholder="Plaintext answer (what players decode)" value={plaintext} onChange={e => setPlaintext(e.target.value)} />
+        {methods.length > 1 && (
+          <select className="input" value={method} onChange={e => setMethod(e.target.value)} style={{ maxWidth: 140 }}>
+            {methods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+        )}
+        <button className="btn btn-xs" onClick={handleGenerate} title="Generate encoded text">
+          <Wand2 size={12} /> Generate
+        </button>
+      </div>
+      <textarea className="input" rows={3} placeholder="Encoded text (auto-generated or manual)" value={puzzle.encodedText || ''} onChange={e => updatePuzzle(pIdx, 'encodedText', e.target.value)} />
+      <input className="input" placeholder="Decoded answer (exact)" value={puzzle.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+      <input className="input" placeholder="Hint (optional)" value={puzzle.hint || ''} onChange={e => updatePuzzle(pIdx, 'hint', e.target.value)} />
+    </div>
+  );
+}
+
+/* ── Word Puzzle Generator sub-component ── */
+function WordPuzzleGenerator({ puzzle, pIdx, updatePuzzle }) {
+  const [answer, setAnswer] = useState(puzzle.validation?.answer || '');
+  const [mode, setMode] = useState(puzzle.wordMode || 'anagram');
+
+  const handleGenerate = () => {
+    if (!answer.trim()) return;
+    const result = generateWordPuzzle(answer.trim(), mode);
+    updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: answer.trim() });
+    updatePuzzle(pIdx, 'scrambledText', result.scrambledText);
+    updatePuzzle(pIdx, 'wordMode', mode);
+    if (result.tiles) {
+      updatePuzzle(pIdx, 'tiles', result.tiles);
+    } else {
+      updatePuzzle(pIdx, 'tiles', null);
+    }
+  };
+
+  return (
+    <div className="puzzle-config">
+      <input className="input" placeholder="Answer word/phrase" value={answer} onChange={e => setAnswer(e.target.value)} />
+      <div className="cipher-gen-row">
+        <select className="input" value={mode} onChange={e => setMode(e.target.value)}>
+          {WORD_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+        </select>
+        <button className="btn btn-xs" onClick={handleGenerate} title="Generate scrambled puzzle">
+          <Wand2 size={12} /> Generate
+        </button>
+      </div>
+      <input className="input" placeholder="Scrambled / clue text (auto or manual)" value={puzzle.scrambledText || ''} onChange={e => updatePuzzle(pIdx, 'scrambledText', e.target.value)} />
+      {puzzle.tiles && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          Tiles: {puzzle.tiles.join(' ')}
+        </div>
+      )}
+      <input className="input" placeholder="Hint (optional)" value={puzzle.hint || ''} onChange={e => updatePuzzle(pIdx, 'hint', e.target.value)} />
+    </div>
+  );
+}
+
+export function PropertySidebar({ selected, onUpdate, onDelete, embedded, globalSettings, onUpdateGlobalSettings }) {
   if (!selected) {
+    if (embedded) return null;
     return (
       <div className="editor-sidebar">
-        <div className="sidebar-header">Properties</div>
-        <p className="sidebar-empty">Select a node to edit its properties.</p>
-        <div className="sidebar-legend">
-          <div className="legend-row"><span className="dot dot-start" /> Start Node (scenario intro)</div>
-          <div className="legend-row"><span className="dot dot-puzzle" /> Puzzle Node</div>
-          <div className="legend-row"><span className="dot dot-choice" /> Choice Node</div>
-          <div className="legend-row"><span className="dot dot-win" /> Win Node (good ending)</div>
-          <div className="legend-row"><span className="dot dot-fail" /> Fail Node (bad ending)</div>
+        <div className="sidebar-content">
+          <div className="sidebar-header">Properties</div>
+          <p className="sidebar-empty">Select a node to edit its properties.</p>
+          <div className="sidebar-legend">
+            <div className="legend-row"><span className="dot dot-start" /> Start Node (scenario intro)</div>
+            <div className="legend-row"><span className="dot dot-puzzle" /> Puzzle Node</div>
+            <div className="legend-row"><span className="dot dot-choice" /> Choice Node</div>
+            <div className="legend-row"><span className="dot dot-ai" /> AI Generator Node</div>
+            <div className="legend-row"><span className="dot dot-endpoint" /> Endpoint (win / fail ending)</div>
+          </div>
         </div>
       </div>
     );
@@ -22,13 +112,13 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
 
   const data = selected.data || {};
   const type = selected.type;
-  const isPuzzle  = type === 'puzzle_node';
-  const isChoice  = type === 'choice_node';
-  const isWin     = type === 'win_node';
-  const isFail    = type === 'fail_node';
-  const isStart   = type === 'start_node';
-  const isTerminal = isWin || isFail;
-  const hasNext    = isPuzzle || isStart;
+  const isPuzzle    = type === 'puzzle_node';
+  const isChoice    = type === 'choice_node';
+  const isEndpoint  = type === 'endpoint_node' || type === 'win_node' || type === 'fail_node';
+  const isStart     = type === 'start_node';
+  const isAI        = type === 'ai_node';
+  const hasNext     = isPuzzle || isStart;
+  const hasStory    = isStart || isPuzzle || isChoice || isEndpoint;
 
   /* ── helpers ── */
   const set = (key, value) => onUpdate({ [key]: value });
@@ -131,17 +221,19 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
   };
 
   /* ── label for node type ── */
-  const TYPE_ICONS = { start_node: Rocket, puzzle_node: Puzzle, choice_node: Zap, win_node: Trophy, fail_node: Skull };
-  const TYPE_LABELS = { start_node: 'Start', puzzle_node: 'Puzzle', choice_node: 'Choice', win_node: 'Win', fail_node: 'Fail' };
+  const TYPE_ICONS = { start_node: Rocket, puzzle_node: Puzzle, choice_node: Zap, endpoint_node: Flag, win_node: Flag, fail_node: Flag };
+  const TYPE_LABELS = { start_node: 'Start', puzzle_node: 'Puzzle', choice_node: 'Choice', endpoint_node: 'Endpoint', win_node: 'Endpoint', fail_node: 'Endpoint' };
   const TypeIcon = TYPE_ICONS[type];
   const typeBadge = TYPE_LABELS[type] || type;
 
   return (
-    <div className="editor-sidebar">
+    <div className={embedded ? 'sidebar-embedded' : 'editor-sidebar'}>
+      {!embedded && (
       <div className="sidebar-header">
         <span>{TypeIcon && <TypeIcon size={14} />} {typeBadge} — {selected.id}</span>
         <button className="btn btn-sm btn-danger" onClick={onDelete}>Delete</button>
       </div>
+      )}
 
       {/* ── common fields ── */}
       <div className="form-group">
@@ -153,18 +245,22 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
         <input className="input" value={data.location || ''} onChange={e => set('location', e.target.value)} />
       </div>
 
-      <div className="form-group">
-        <label className="label">Story Title</label>
-        <input className="input" value={data.story?.title || ''} onChange={e => setStoryField('title', e.target.value)} />
-      </div>
-      <div className="form-group">
-        <label className="label">Story Text</label>
-        <textarea className="input" rows={3} value={data.story?.text || ''} onChange={e => setStoryField('text', e.target.value)} />
-      </div>
-      <div className="form-group">
-        <label className="label">Narration</label>
-        <textarea className="input" rows={2} value={data.story?.narrationText || ''} onChange={e => setStoryField('narrationText', e.target.value)} />
-      </div>
+      {hasStory && (
+        <>
+          <div className="form-group">
+            <label className="label">Story Title</label>
+            <input className="input" value={data.story?.title || ''} onChange={e => setStoryField('title', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="label">Story Text</label>
+            <textarea className="input" rows={3} value={data.story?.text || ''} onChange={e => setStoryField('text', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="label">Narration</label>
+            <textarea className="input" rows={2} value={data.story?.narrationText || ''} onChange={e => setStoryField('narrationText', e.target.value)} />
+          </div>
+        </>
+      )}
 
       {/* ── next node ID for puzzle / start ── */}
       {hasNext && (
@@ -273,6 +369,158 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
                     <input className="input" placeholder="Instructions" value={p.embed?.instructions || ''} onChange={e => updatePuzzle(pIdx, 'embed', { ...(p.embed || {}), instructions: e.target.value })} />
                   </div>
                 )}
+
+                {/* ── Cipher types ── */}
+                {['cipher', 'emoji_cipher', 'ascii_cipher', 'binary_cipher'].includes(p.type) && (
+                  <CipherGenerator puzzle={p} pIdx={pIdx} updatePuzzle={updatePuzzle} />
+                )}
+
+                {p.type === 'qr_code' && (
+                  <div className="puzzle-config">
+                    <input className="input" placeholder="QR Code image URL" value={p.imageUrl || ''} onChange={e => updatePuzzle(pIdx, 'imageUrl', e.target.value)} />
+                    <input className="input" placeholder="Decoded answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" placeholder="Hint (optional)" value={p.hint || ''} onChange={e => updatePuzzle(pIdx, 'hint', e.target.value)} />
+                  </div>
+                )}
+
+                {/* ── Location types ── */}
+                {['gps_coordinate', 'landmark_id'].includes(p.type) && (
+                  <div className="puzzle-config">
+                    {(p.type === 'landmark_id') && (
+                      <input className="input" placeholder="Image URL" value={p.imageUrl || ''} onChange={e => updatePuzzle(pIdx, 'imageUrl', e.target.value)} />
+                    )}
+                    <input className="input" placeholder="Answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" placeholder="Map/Direction hint" value={p.mapHint || ''} onChange={e => updatePuzzle(pIdx, 'mapHint', e.target.value)} />
+                    <div className="option-label-row">Map Coordinates (optional — shows embedded map)</div>
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <input className="input" type="number" step="any" placeholder="Latitude" value={p.coordinates?.lat || ''} onChange={e => updatePuzzle(pIdx, 'coordinates', { ...(p.coordinates || {}), lat: parseFloat(e.target.value) || 0, lng: p.coordinates?.lng || 0 })} />
+                      <input className="input" type="number" step="any" placeholder="Longitude" value={p.coordinates?.lng || ''} onChange={e => updatePuzzle(pIdx, 'coordinates', { ...(p.coordinates || {}), lat: p.coordinates?.lat || 0, lng: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                    {p.coordinates?.lat && p.coordinates?.lng && (
+                      <div style={{ marginTop: 4, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                        <iframe
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${p.coordinates.lng-0.02},${p.coordinates.lat-0.015},${p.coordinates.lng+0.02},${p.coordinates.lat+0.015}&layer=mapnik&marker=${p.coordinates.lat},${p.coordinates.lng}`}
+                          style={{ width: '100%', height: 150, border: 'none' }}
+                          title="Map Preview"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Directional Riddle ── */}
+                {p.type === 'directional_riddle' && (
+                  <div className="puzzle-config">
+                    <div className="option-label-row">Grid Size & Directions</div>
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <input className="input" type="number" placeholder="Grid size (e.g. 5)" value={p.gridSize || ''} onChange={e => updatePuzzle(pIdx, 'gridSize', parseInt(e.target.value) || 5)} style={{ maxWidth: 80 }} />
+                      <input className="input" placeholder="Start label (e.g. Town Hall)" value={p.startLabel || ''} onChange={e => updatePuzzle(pIdx, 'startLabel', e.target.value)} />
+                    </div>
+                    <textarea className="input" rows={3} placeholder="Directions (one per line, e.g. N 2, E 3, S 1)" value={p.directions || ''} onChange={e => updatePuzzle(pIdx, 'directions', e.target.value)} />
+                    <input className="input" placeholder="Goal label / answer (e.g. Library)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" placeholder="Map hint (optional)" value={p.mapHint || ''} onChange={e => updatePuzzle(pIdx, 'mapHint', e.target.value)} />
+                    <div className="option-label-row">Map Coordinates (optional)</div>
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <input className="input" type="number" step="any" placeholder="Latitude" value={p.coordinates?.lat || ''} onChange={e => updatePuzzle(pIdx, 'coordinates', { ...(p.coordinates || {}), lat: parseFloat(e.target.value) || 0, lng: p.coordinates?.lng || 0 })} />
+                      <input className="input" type="number" step="any" placeholder="Longitude" value={p.coordinates?.lng || ''} onChange={e => updatePuzzle(pIdx, 'coordinates', { ...(p.coordinates || {}), lat: p.coordinates?.lat || 0, lng: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Perception types ── */}
+                {p.type === 'spot_difference' && (
+                  <div className="puzzle-config">
+                    <input className="input" placeholder="Image A URL" value={p.imageUrlA || ''} onChange={e => updatePuzzle(pIdx, 'imageUrlA', e.target.value)} />
+                    <input className="input" placeholder="Image B URL" value={p.imageUrlB || ''} onChange={e => updatePuzzle(pIdx, 'imageUrlB', e.target.value)} />
+                    <input className="input" placeholder="Answer (describe difference)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                  </div>
+                )}
+
+                {p.type === 'hidden_object' && (
+                  <div className="puzzle-config">
+                    <input className="input" placeholder="Image URL" value={p.imageUrl || ''} onChange={e => updatePuzzle(pIdx, 'imageUrl', e.target.value)} />
+                    <input className="input" placeholder="Answer (what to find)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                  </div>
+                )}
+
+                {p.type === 'audio_clue' && (
+                  <div className="puzzle-config">
+                    <input className="input" placeholder="Audio URL (.mp3, .wav)" value={p.audioUrl || ''} onChange={e => updatePuzzle(pIdx, 'audioUrl', e.target.value)} />
+                    <input className="input" placeholder="Answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                  </div>
+                )}
+
+                {/* ── Word puzzle ── */}
+                {p.type === 'word_puzzle' && (
+                  <WordPuzzleGenerator puzzle={p} pIdx={pIdx} updatePuzzle={updatePuzzle} />
+                )}
+
+                {/* ── LaTeX Math ── */}
+                {p.type === 'latex_math' && (
+                  <div className="puzzle-config">
+                    <textarea className="input" rows={2} placeholder="LaTeX expression (e.g. \\frac{x}{2} = 5)" value={p.latexExpression || ''} onChange={e => updatePuzzle(pIdx, 'latexExpression', e.target.value)} />
+                    <input className="input" placeholder="Answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" placeholder="Hint (optional)" value={p.hint || ''} onChange={e => updatePuzzle(pIdx, 'hint', e.target.value)} />
+                  </div>
+                )}
+
+                {/* ── Narrative / Found Document ── */}
+                {['narrative_clue', 'found_document'].includes(p.type) && (
+                  <div className="puzzle-config">
+                    <textarea className="input" rows={4} placeholder="Narrative / document text" value={p.narrativeText || ''} onChange={e => updatePuzzle(pIdx, 'narrativeText', e.target.value)} />
+                    <input className="input" placeholder="Image URL (optional)" value={p.imageUrl || ''} onChange={e => updatePuzzle(pIdx, 'imageUrl', e.target.value)} />
+                    <input className="input" placeholder="Answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" placeholder="Hint (optional)" value={p.hint || ''} onChange={e => updatePuzzle(pIdx, 'hint', e.target.value)} />
+                  </div>
+                )}
+
+                {/* ── Red Herring ── */}
+                {p.type === 'red_herring' && (
+                  <div className="puzzle-config">
+                    <textarea className="input" rows={3} placeholder="Misleading text / decoy clue" value={p.narrativeText || ''} onChange={e => updatePuzzle(pIdx, 'narrativeText', e.target.value)} />
+                    <p className="sidebar-hint">Red herrings auto-solve — they're decoys to distract players.</p>
+                  </div>
+                )}
+
+                {/* ── Multi-Stage Chain ── */}
+                {p.type === 'multi_stage_chain' && (
+                  <div className="puzzle-config">
+                    <div className="option-label-row">Stages:</div>
+                    {(p.stages || []).map((stage, sIdx) => (
+                      <div key={sIdx} className="option-row">
+                        <span style={{ minWidth: 20, textAlign: 'center' }}>{sIdx + 1}</span>
+                        <input className="input" value={stage.prompt || ''} placeholder="Stage prompt" onChange={e => {
+                          const stages = [...(p.stages || [])];
+                          stages[sIdx] = { ...stages[sIdx], prompt: e.target.value };
+                          updatePuzzle(pIdx, 'stages', stages);
+                        }} />
+                        <button className="btn btn-xs btn-ghost" onClick={() => {
+                          updatePuzzle(pIdx, 'stages', (p.stages || []).filter((_, i) => i !== sIdx));
+                        }}><X size={12} /></button>
+                      </div>
+                    ))}
+                    <button className="btn btn-xs" onClick={() => {
+                      updatePuzzle(pIdx, 'stages', [...(p.stages || []), { prompt: `Stage ${(p.stages || []).length + 1}`, placeholder: 'Answer…' }]);
+                    }}>+ Add Stage</button>
+                    <input className="input" placeholder="Final answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                  </div>
+                )}
+
+                {/* ── Code Editor ── */}
+                {p.type === 'code_editor' && (
+                  <div className="puzzle-config">
+                    <select className="input" value={p.language || 'javascript'} onChange={e => updatePuzzle(pIdx, 'language', e.target.value)}>
+                      <option value="javascript">JavaScript</option>
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                    </select>
+                    <textarea className="input" rows={3} placeholder="Boilerplate code" value={p.boilerplate || ''} onChange={e => updatePuzzle(pIdx, 'boilerplate', e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem' }} />
+                    <input className="input" placeholder="Expected answer (exact)" value={p.validation?.answer || ''} onChange={e => updatePuzzle(pIdx, 'validation', { mode: 'exact', answer: e.target.value })} />
+                    <input className="input" type="number" placeholder="Hidden test count" value={p.hiddenTestCount || ''} onChange={e => updatePuzzle(pIdx, 'hiddenTestCount', parseInt(e.target.value) || 0)} />
+                  </div>
+                )}
               </div>
             ))}
             <div className="puzzle-add-row">
@@ -284,6 +532,24 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
                 const sel = document.getElementById('puzzle-type-add');
                 if (sel.value) { addPuzzle(sel.value); sel.value = ''; }
               }}>+ Add</button>
+            </div>
+          </div>
+
+          {/* ── AI Integration (optional) ── */}
+          <div className="section">
+            <div className="section-title">AI Integration (Optional)</div>
+            <div className="form-group">
+              <label className="label">AI Prompt</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={data.aiPrompt || ''}
+                onChange={e => set('aiPrompt', e.target.value)}
+                placeholder="Optional: Describe AI-generated content to enhance this puzzle...&#10;&#10;Example: Generate an image of a mysterious locked door with ancient symbols"
+              />
+              <p className="sidebar-hint">
+                Use AI-generated content from an AI Generator node, or specify a custom prompt here to generate content at deploy time.
+              </p>
             </div>
           </div>
         </>
@@ -309,10 +575,22 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
         </div>
       )}
 
-      {/* ── terminal node hint ── */}
-      {isTerminal && (
+      {/* ── endpoint node config ── */}
+      {isEndpoint && (
         <div className="section">
-          <p className="sidebar-hint">{isWin ? 'This is a terminal win node — the scenario ends here with a victory.' : 'This is a terminal fail node — the scenario ends here with a defeat.'}</p>
+          <div className="form-group">
+            <label className="label">Outcome</label>
+            <select className="input" value={data.outcome || 'win'} onChange={e => set('outcome', e.target.value)}>
+              <option value="win">Win (Good Ending)</option>
+              <option value="fail">Fail (Bad Ending)</option>
+            </select>
+          </div>
+
+          <p className="sidebar-hint">
+            {(data.outcome || 'win') === 'win'
+              ? 'This endpoint marks a successful game completion.'
+              : 'This endpoint marks a game failure / bad ending.'}
+          </p>
 
           <div className="form-group">
             <label className="label"><Video size={14} /> End Screen Media (optional)</label>
@@ -332,6 +610,95 @@ export function PropertySidebar({ selected, onUpdate, onDelete }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── AI generator config ── */}
+      {isAI && (
+        <div className="section">
+          <div className="section-title">AI Generator Configuration</div>
+          <div className="form-group">
+            <label className="label">AI Prompt (Required) *</label>
+            <textarea
+              className="input"
+              rows={4}
+              value={data.aiConfig?.prompt || ''}
+              onChange={e => set('aiConfig', { ...(data.aiConfig || {}), prompt: e.target.value })}
+              placeholder="Describe what you want the AI to generate...\n\nExample: Generate 3 mysterious images of an abandoned laboratory with cryptic symbols on the walls"
+            />
+            {!(data.aiConfig?.prompt || '').trim() && (
+              <p className="sidebar-hint" style={{ color: '#ef4444' }}>⚠️ Prompt is required for AI generation</p>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="label">Generate Content Types</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={(data.aiConfig?.generates || []).includes('images')}
+                  onChange={e => {
+                    const generates = data.aiConfig?.generates || [];
+                    const updated = e.target.checked
+                      ? [...generates, 'images']
+                      : generates.filter(g => g !== 'images');
+                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                  }}
+                />
+                <span>Images</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={(data.aiConfig?.generates || []).includes('videos')}
+                  onChange={e => {
+                    const generates = data.aiConfig?.generates || [];
+                    const updated = e.target.checked
+                      ? [...generates, 'videos']
+                      : generates.filter(g => g !== 'videos');
+                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                  }}
+                />
+                <span>Videos</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={(data.aiConfig?.generates || []).includes('text')}
+                  onChange={e => {
+                    const generates = data.aiConfig?.generates || [];
+                    const updated = e.target.checked
+                      ? [...generates, 'text']
+                      : generates.filter(g => g !== 'text');
+                    set('aiConfig', { ...(data.aiConfig || {}), generates: updated });
+                  }}
+                />
+                <span>Text</span>
+              </label>
+            </div>
+            {(data.aiConfig?.generates || []).length === 0 && (
+              <p className="sidebar-hint" style={{ color: '#f59e0b', marginTop: '0.5rem' }}>⚠️ Select at least one content type to generate</p>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="label">Target Puzzle Node (Optional)</label>
+            <input
+              className="input"
+              value={data.aiConfig?.targetPuzzleId || ''}
+              onChange={e => set('aiConfig', { ...(data.aiConfig || {}), targetPuzzleId: e.target.value })}
+              placeholder="P_XXX — leave blank to use manually"
+            />
+            <p className="sidebar-hint">
+              Optional: Specify a puzzle node ID to automatically apply generated content to.
+              Leave blank to manually use generated content elsewhere.
+            </p>
+          </div>
+
+          <p className="sidebar-hint" style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            ℹ️ AI generation happens at <strong>deploy time</strong>. When you press Deploy, this node will call the API to generate content based on your prompt. The generated content is cached in the database and won't appear in the game JSON.
+          </p>
         </div>
       )}
     </div>

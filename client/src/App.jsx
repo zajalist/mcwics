@@ -10,6 +10,8 @@ import AuthPage from './pages/AuthPage';
 import BrowsePage from './pages/BrowsePage';
 import ProfilePage from './pages/ProfilePage';
 import EditorPage from './editor/EditorPage';
+import DocumentationPage from './pages/DocumentationPage';
+import ContactPage from './pages/ContactPage';
 
 function AppInner() {
   const { user, loading: authLoading } = useAuth();
@@ -156,6 +158,14 @@ function AppInner() {
             existingDocId={editorDocId}
             onNavigate={handleNavigate}
           />
+        )}
+
+        {page === 'docs' && (
+          <DocumentationPage />
+        )}
+
+        {page === 'contact' && (
+          <ContactPage />
         )}
       </div>
     </>

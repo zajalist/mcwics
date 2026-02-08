@@ -16,7 +16,8 @@ class GameEngine {
       solvedPuzzles: [],
       failReason: null,
       timeRemainingSeconds: scenario.globals.timerSeconds || null,
-      puzzleAttempts: {} // puzzleId → attempts used
+      puzzleAttempts: {}, // puzzleId → attempts used
+      puzzleAssignments: {}, // puzzleId → playerId (for parallel puzzles)
     };
 
     // Apply autoEffects on first node if any
@@ -24,6 +25,29 @@ class GameEngine {
     if (startNode && startNode.autoEffects) {
       this._applyEffects(room, startNode.autoEffects);
     }
+  }
+
+  // ── Assign puzzles to players for parallel solving ─────
+  assignPuzzlesToPlayers(room) {
+    const node = this.getCurrentNode(room);
+    if (!node || !node.puzzles || node.puzzles.length === 0) return;
+
+    const connectedPlayers = room.players.filter(p => p.connected);
+    // If only 1 player, no assignment needed (they get all puzzles)
+    if (connectedPlayers.length <= 1) {
+      room.gameState.puzzleAssignments = {};
+      return;
+    }
+
+    const assignments = {};
+    node.puzzles.forEach((puzzle, idx) => {
+      // Red herrings don't need assignment — everyone sees them
+      if (puzzle.type === 'red_herring') return;
+      // Round-robin assignment
+      const player = connectedPlayers[idx % connectedPlayers.length];
+      assignments[puzzle.id] = player.id;
+    });
+    room.gameState.puzzleAssignments = assignments;
   }
 
   // ── Get scenario for room ────────────────────────────
@@ -148,6 +172,86 @@ class GameEngine {
       return true;
     }
 
+    // ── Cipher types (all use exact text match) ──
+    if (['cipher', 'emoji_cipher', 'ascii_cipher', 'binary_cipher', 'qr_code'].includes(pType)) {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── Location types (exact text match, case-insensitive) ──
+    if (['gps_coordinate', 'landmark_id', 'directional_riddle'].includes(pType)) {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── Perception types (exact text match) ──
+    if (['spot_difference', 'hidden_object', 'audio_clue'].includes(pType)) {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── Word puzzle ──
+    if (pType === 'word_puzzle') {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── LaTeX Math ──
+    if (pType === 'latex_math') {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      // Try numeric comparison first, fall back to exact string
+      const numAnswer = parseFloat(answer);
+      const numExpected = parseFloat(val.answer);
+      if (!isNaN(numAnswer) && !isNaN(numExpected)) {
+        return Math.abs(numAnswer - numExpected) < 0.001;
+      }
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── Narrative / Found Document ──
+    if (['narrative_clue', 'found_document'].includes(pType)) {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+    }
+
+    // ── Red Herring — always "solved" (decoy) ──
+    if (pType === 'red_herring') {
+      return true;
+    }
+
+    // ── Multi-Stage Chain ──
+    if (pType === 'multi_stage_chain') {
+      // answer = { stage: idx, value: "..." }
+      const stages = puzzle.stages || [];
+      if (!answer || typeof answer !== 'object') return false;
+      const stage = stages[answer.stage];
+      if (!stage) return false;
+      // If this is the last stage, validate the final answer
+      if (answer.stage === stages.length - 1) {
+        const val = puzzle.validation;
+        if (!val || !val.answer) return false;
+        return String(answer.value).trim().toUpperCase() === String(val.answer).trim().toUpperCase();
+      }
+      // For intermediate stages, accept any non-empty answer (or stage-specific answer)
+      if (stage.answer) {
+        return String(answer.value).trim().toUpperCase() === String(stage.answer).trim().toUpperCase();
+      }
+      return answer.value && answer.value.trim().length > 0;
+    }
+
+    // ── Code Editor ──
+    if (pType === 'code_editor') {
+      const val = puzzle.validation;
+      if (!val || !val.answer) return false;
+      return String(answer).trim() === String(val.answer).trim();
+    }
+
     return false;
   }
 
@@ -222,6 +326,9 @@ class GameEngine {
       this._applyEffects(room, newNode.autoEffects);
     }
 
+    // Assign puzzles on the new node
+    this.assignPuzzlesToPlayers(room);
+
     return { ok: true, nextNodeId: choice.nextNodeId };
   }
 
@@ -238,6 +345,8 @@ class GameEngine {
       if (newNode && newNode.autoEffects) {
         this._applyEffects(room, newNode.autoEffects);
       }
+      // Assign puzzles on the new node
+      this.assignPuzzlesToPlayers(room);
       return { ok: true, nextNodeId: node.nextNodeId };
     }
 
@@ -258,6 +367,9 @@ class GameEngine {
     if (newNode && newNode.autoEffects) {
       this._applyEffects(room, newNode.autoEffects);
     }
+
+    // Assign puzzles on the new node
+    this.assignPuzzlesToPlayers(room);
 
     return { ok: true, nextNodeId: node.nextNodeId };
   }
@@ -339,7 +451,8 @@ class GameEngine {
         vars: { ...room.gameState.vars },
         solvedPuzzles: [...room.gameState.solvedPuzzles],
         timeRemainingSeconds: room.gameState.timeRemainingSeconds,
-        puzzleAttempts: { ...room.gameState.puzzleAttempts }
+        puzzleAttempts: { ...room.gameState.puzzleAttempts },
+        puzzleAssignments: room.gameState.puzzleAssignments || {},
       } : null,
       currentNode: clientNode,
       roles: this.roles.filter(r => ['builder', 'pathfinder', 'decoder'].includes(r.id))

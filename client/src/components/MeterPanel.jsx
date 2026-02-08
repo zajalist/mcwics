@@ -41,10 +41,10 @@ export default function MeterPanel({ vars, scenarioId, timeRemaining }) {
             <div className="meter-bar-wrap">
               <div
                 className="meter-bar water-bar"
-                style={{ width: `${Math.max(0, Math.min(100, vars.water))}%` }}
+                style={{ width: `${Math.max(0, Math.min(100, Math.ceil(vars.water)))}%` }}
               />
             </div>
-            <span className="meter-value">{vars.water}%</span>
+            <span className="meter-value">{Math.ceil(vars.water)}%</span>
           </div>
         </>
       ) : (

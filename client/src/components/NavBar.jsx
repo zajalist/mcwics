@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import starLogo from '../assets/star-logo.svg';
 
 export default function NavBar({ currentPath, onNavigate }) {
   const { user } = useAuth();
@@ -11,7 +12,8 @@ export default function NavBar({ currentPath, onNavigate }) {
     <nav className="navbar">
       <div className="nav-left">
         <button className="nav-brand" onClick={() => onNavigate('home')}>
-          <span className="title-lock">LOCK</span><span className="title-step">STEP</span>
+          <img src={starLogo} alt="LockStep" className="nav-logo" />
+          <span className="nav-brand-text">Lockstep</span>
         </button>
       </div>
 
@@ -34,6 +36,18 @@ export default function NavBar({ currentPath, onNavigate }) {
         >
           Editor
         </button>
+        <button
+          className={`nav-link ${currentPath === 'docs' ? 'active' : ''}`}
+          onClick={() => onNavigate('docs')}
+        >
+          Documentation
+        </button>
+        <button
+          className={`nav-link ${currentPath === 'contact' ? 'active' : ''}`}
+          onClick={() => onNavigate('contact')}
+        >
+          Contact
+        </button>
       </div>
 
       <div className="nav-right">
@@ -49,9 +63,14 @@ export default function NavBar({ currentPath, onNavigate }) {
             }
           </button>
         ) : (
-          <button className="btn btn-sm btn-primary" onClick={() => onNavigate('auth')}>
-            Sign In
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-sm" onClick={() => onNavigate('auth')}>
+              Sign In
+            </button>
+            <button className="btn btn-sm btn-primary" onClick={() => onNavigate('auth')}>
+              Sign Up
+            </button>
+          </div>
         )}
       </div>
     </nav>

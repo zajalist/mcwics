@@ -8,8 +8,8 @@ const ROLE_ICONS = {
   decoder: Search
 };
 const ROLE_COLORS = {
-  builder: '#d4a574',
-  pathfinder: '#e0b878',
+  builder: '#e8dcc8',
+  pathfinder: '#e8dcc8',
   decoder: '#8b5cf6'
 };
 
@@ -61,7 +61,7 @@ export default function LobbyPage({ roomState, playerId, onBackToHome }) {
               {roomState.players.map(p => (
                 <li key={p.id} className={`player-item ${!p.connected ? 'disconnected' : ''}`}>
                   <span className="player-name">
-                    {p.name} {p.isHost && <Star size={14} style={{verticalAlign:'middle', color:'#d4a574'}} />} {p.id === playerId && '(you)'}
+                    {p.name} {p.isHost && <Star size={14} style={{verticalAlign:'middle', color:'#e8dcc8'}} />} {p.id === playerId && '(you)'}
                   </span>
                   <span className="player-role">
                     {p.role ? (

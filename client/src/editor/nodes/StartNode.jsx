@@ -2,12 +2,12 @@ import React from 'react';
 import { Rocket } from 'lucide-react';
 import { Handle, Position } from 'reactflow';
 
-export function StartNode({ data }) {
+export function StartNode({ data, selected }) {
   const title = data?.story?.title || 'Scenario Start';
   const next  = data?.nextNodeId;
 
   return (
-    <div className={`editor-node start-node ${!next ? 'invalid' : ''}`}>
+    <div className={`editor-node start-node ${!next ? 'invalid' : ''} ${selected ? 'selected' : ''}`}>
       <div className="node-header">
         <span className="node-type"><Rocket size={14} /> Start</span>
         <span className="node-id">{data?.id}</span>
