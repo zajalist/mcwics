@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 
-export default function HomePage({ onRoomJoined }) {
+export default function HomePage({ onRoomJoined, customScenarioJson, onClearCustom }) {
   const [mode, setMode] = useState(null); // null | 'create' | 'join'
   const [scenarios, setScenarios] = useState([]);
   const [selectedScenario, setSelectedScenario] = useState('');
@@ -10,12 +10,19 @@ export default function HomePage({ onRoomJoined }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // If a custom scenario was passed from Browse → Play, auto-open create mode
+  useEffect(() => {
+    if (customScenarioJson) {
+      setMode('create');
+    }
+  }, [customScenarioJson]);
+
   useEffect(() => {
     fetch('/api/scenarios')
       .then(res => res.json())
       .then(data => {
         setScenarios(data);
-        if (data.length > 0) setSelectedScenario(data[0].scenarioId);
+        if (data.length > 0 && !customScenarioJson) setSelectedScenario(data[0].scenarioId);
       })
       .catch(() => setError('Failed to load scenarios'));
   }, []);
@@ -24,6 +31,30 @@ export default function HomePage({ onRoomJoined }) {
     if (!playerName.trim()) return setError('Enter your name');
     setLoading(true);
     setError('');
+
+    // Ensure socket is connected
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    // If we have a custom scenario JSON (from Firestore), send the full JSON to the server
+    if (customScenarioJson) {
+      // Ensure socket is connected before emitting
+      if (!socket.connected) {
+        socket.connect();
+      }
+      socket.emit('CREATE_ROOM', {
+        customScenarioJson,
+        playerName: playerName.trim()
+      }, (res) => {
+        setLoading(false);
+        if (res.error) return setError(res.error);
+        onClearCustom?.();
+        onRoomJoined(res);
+      });
+      return;
+    }
+
     socket.emit('CREATE_ROOM', {
       scenarioId: selectedScenario,
       playerName: playerName.trim()
@@ -71,7 +102,7 @@ export default function HomePage({ onRoomJoined }) {
 
         {mode === 'create' && (
           <div className="form-card">
-            <h2>Create a Room</h2>
+            <h2>{customScenarioJson ? 'Host a Scavenge' : 'Create a Room'}</h2>
             <input
               className="input"
               placeholder="Your Name"
@@ -79,22 +110,36 @@ export default function HomePage({ onRoomJoined }) {
               onChange={e => setPlayerName(e.target.value)}
               maxLength={20}
             />
-            <label className="label">Scenario</label>
-            <select
-              className="input"
-              value={selectedScenario}
-              onChange={e => setSelectedScenario(e.target.value)}
-            >
-              {scenarios.map(s => (
-                <option key={s.scenarioId} value={s.scenarioId}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-            {scenarios.find(s => s.scenarioId === selectedScenario) && (
-              <p className="scenario-desc">
-                {scenarios.find(s => s.scenarioId === selectedScenario).description}
-              </p>
+            {customScenarioJson ? (
+              <div className="custom-scenario-info">
+                <p className="scenario-desc">
+                  <strong>{customScenarioJson.scenarios?.[0]?.title || 'Custom Scenario'}</strong><br />
+                  {customScenarioJson.scenarios?.[0]?.description || 'A user-created scenario'}
+                </p>
+                <button className="btn btn-ghost btn-xs" onClick={() => { onClearCustom?.(); setMode(null); }}>
+                  Choose a different scenario
+                </button>
+              </div>
+            ) : (
+              <>
+                <label className="label">Scenario</label>
+                <select
+                  className="input"
+                  value={selectedScenario}
+                  onChange={e => setSelectedScenario(e.target.value)}
+                >
+                  {scenarios.map(s => (
+                    <option key={s.scenarioId} value={s.scenarioId}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+                {scenarios.find(s => s.scenarioId === selectedScenario) && (
+                  <p className="scenario-desc">
+                    {scenarios.find(s => s.scenarioId === selectedScenario).description}
+                  </p>
+                )}
+              </>
             )}
             <button
               className="btn btn-primary"
@@ -139,7 +184,11 @@ export default function HomePage({ onRoomJoined }) {
           </div>
         )}
 
-        {error && <div className="error-msg">{error}</div>}
+        {error && (
+          <div className="error-msg" onClick={() => setError('')} style={{ cursor: 'pointer' }}>
+            {error} <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>(click to dismiss)</span>
+          </div>
+        )}
       </div>
     </div>
   );

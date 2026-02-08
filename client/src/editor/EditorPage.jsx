@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
   Background, Controls, MiniMap, Panel,
   addEdge, applyNodeChanges, applyEdgeChanges,
@@ -14,6 +14,7 @@ import { FailNode }   from './nodes/FailNode';
 import { StartNode }  from './nodes/StartNode';
 import { PropertySidebar } from './sidebar/PropertySidebar';
 import { exportToMvpJson, importFromMvpJson, validateGraph } from './utils/transform';
+import DeployModal from './DeployModal';
 
 /* ── node type registry ── */
 const nodeTypes = {
@@ -52,12 +53,28 @@ function makeNode(type, extraPos = 0) {
 }
 
 /* ── component ── */
-export default function EditorPage() {
+export default function EditorPage({ initialScenario, existingDocId: propDocId, onNavigate }) {
   const [nodes, setNodes]     = useState([]);
   const [edges, setEdges]     = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [errors, setErrors]   = useState([]);
+  const [showDeploy, setShowDeploy] = useState(false);
+  const [docId, setDocId]     = useState(propDocId || null);
   const fileRef               = useRef(null);
+
+  /* ── load initial scenario from props (e.g. from Browse → Edit) ── */
+  useEffect(() => {
+    if (initialScenario?.scenarioJson) {
+      try {
+        const { nodes: n, edges: e } = importFromMvpJson(initialScenario.scenarioJson);
+        _counter = n.length + 10;
+        setNodes(n);
+        setEdges(e);
+        setSelectedId(null);
+        setErrors([]);
+      } catch { /* ignore bad data */ }
+    }
+  }, []); // run once on mount
 
   /* derived selected node — always fresh from nodes array */
   const selected = useMemo(() => nodes.find(n => n.id === selectedId) || null, [nodes, selectedId]);
@@ -162,6 +179,14 @@ export default function EditorPage() {
     evt.target.value = ''; // allow re-import of same file
   }, []);
 
+  /* ── deploy to Firestore ── */
+  const handleDeploy = useCallback(() => {
+    const errs = runValidation();
+    setErrors(errs);
+    if (errs.length > 0) return;
+    setShowDeploy(true);
+  }, [runValidation]);
+
   /* ── render ── */
   const validationSummary = errors.length > 0 ? errors : null;
 
@@ -169,7 +194,12 @@ export default function EditorPage() {
     <div className="editor-page">
       {/* ── header bar ── */}
       <div className="editor-header">
-        <h1>LockStep Scenario Editor</h1>
+        <div className="editor-header-left">
+          {onNavigate && (
+            <button className="btn btn-sm btn-ghost" onClick={() => onNavigate('home')}>← Back</button>
+          )}
+          <h1>LockStep Scenario Editor</h1>
+        </div>
         <div className="editor-actions">
           <button className="btn btn-sm btn-start" onClick={() => addNode('start_node')}>+ Start</button>
           <button className="btn btn-sm" onClick={() => addNode('puzzle_node')}>+ Puzzle</button>
@@ -181,7 +211,8 @@ export default function EditorPage() {
             Import
             <input ref={fileRef} type="file" accept=".json,application/json" onChange={handleImport} />
           </label>
-          <button className="btn btn-sm btn-primary" onClick={handleExport}>Export JSON</button>
+          <button className="btn btn-sm" onClick={handleExport}>Export JSON</button>
+          <button className="btn btn-sm btn-deploy" onClick={handleDeploy}>🚀 Deploy</button>
         </div>
       </div>
 
@@ -239,6 +270,16 @@ export default function EditorPage() {
           onDelete={deleteSelected}
         />
       </div>
+
+      {/* ── deploy modal ── */}
+      {showDeploy && (
+        <DeployModal
+          scenarioJson={exportToMvpJson(nodes, edges)}
+          existingDocId={docId}
+          onClose={() => setShowDeploy(false)}
+          onDeployed={(id) => { setDocId(id); alert('Scenario deployed successfully!'); }}
+        />
+      )}
     </div>
   );
 }
