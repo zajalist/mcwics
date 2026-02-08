@@ -393,9 +393,39 @@ export default function EditorPage({ initialScenario, existingDocId: propDocId, 
         if (gs) setGlobalSettings(gs);
         setSelectedId(null);
         setErrors([]);
+        // Clear autosave after loading a scenario
+        localStorage.removeItem('lockstep_editor_autosave');
       } catch { /* ignore bad data */ }
+    } else {
+      // Try to restore from autosave if no initial scenario
+      try {
+        const autosave = localStorage.getItem('lockstep_editor_autosave');
+        if (autosave) {
+          const parsed = JSON.parse(autosave);
+          if (parsed.nodes && parsed.edges) {
+            setNodes(parsed.nodes);
+            setEdges(parsed.edges);
+            if (parsed.globalSettings) setGlobalSettings(parsed.globalSettings);
+            _counter = parsed.nodes.length + 10;
+          }
+        }
+      } catch { /* ignore corrupted autosave */ }
     }
   }, []); // run once on mount
+
+  /* ── Autosave to localStorage whenever editor state changes ── */
+  useEffect(() => {
+    // Only autosave if there's content and no initial scenario (draft mode)
+    if (nodes.length > 0 && !initialScenario?.scenarioJson) {
+      const autosaveData = {
+        nodes,
+        edges,
+        globalSettings,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('lockstep_editor_autosave', JSON.stringify(autosaveData));
+    }
+  }, [nodes, edges, globalSettings, initialScenario]);
 
   /* derived selected node — always fresh from nodes array */
   const selected = useMemo(() => nodes.find(n => n.id === selectedId) || null, [nodes, selectedId]);

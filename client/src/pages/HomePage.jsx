@@ -139,7 +139,14 @@ export default function HomePage({ onRoomJoined, customScenarioJson, onClearCust
     }, (res) => {
       clearTimeout(timer);
       setLoading(false);
-      if (!res || res.error) return setError(res?.error || 'Unknown error');
+      if (!res) return setError('No response from server');
+      if (res.error) {
+        // Provide user-friendly error messages
+        if (res.error.includes('not found') || res.error.includes('does not exist')) {
+          return setError('Room not found. Check your code and try again.');
+        }
+        return setError(res.error);
+      }
       onRoomJoined(res);
     });
   };

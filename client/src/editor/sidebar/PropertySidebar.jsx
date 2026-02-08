@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Rocket, Puzzle, Zap, Flag, Video, X, Wand2 } from 'lucide-react';
+import { Rocket, Puzzle, Zap, Flag, Video, X, Wand2, Eye } from 'lucide-react';
 import { MAX_CHOICES } from '../nodes/ChoiceNode';
 import { PUZZLE_TYPES } from '../nodes/PuzzleNode';
 import { CIPHER_METHODS, BINARY_METHOD, ASCII_METHOD, EMOJI_METHOD } from '../../utils/cipherUtils';
@@ -234,6 +234,9 @@ export function PropertySidebar({
     onUpdate({ puzzles: updated });
   };
 
+  /* ── Preview modal state ── */
+  const [showPreview, setShowPreview] = useState(false);
+
   /* ── label for node type ── */
   const TYPE_ICONS = { start_node: Rocket, puzzle_node: Puzzle, choice_node: Zap, endpoint_node: Flag, win_node: Flag, fail_node: Flag };
   const TYPE_LABELS = { start_node: 'Start', puzzle_node: 'Puzzle', choice_node: 'Choice', endpoint_node: 'Endpoint', win_node: 'Endpoint', fail_node: 'Endpoint' };
@@ -245,8 +248,123 @@ export function PropertySidebar({
       {!embedded && (
       <div className="sidebar-header">
         <span>{TypeIcon && <TypeIcon size={14} />} {typeBadge} — {selected.id}</span>
-        <button className="btn btn-sm btn-danger" onClick={onDelete}>Delete</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-sm btn-ghost" onClick={() => setShowPreview(true)} title="Preview player view">
+            <Eye size={14} /> Preview
+          </button>
+          <button className="btn btn-sm btn-danger" onClick={onDelete}>Delete</button>
+        </div>
       </div>
+      )}
+
+      {/* ── Preview Modal ── */}
+      {showPreview && (
+        <div className="preview-modal-overlay" onClick={() => setShowPreview(false)}>
+          <div className="preview-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="palette-modal-header">
+              <h3>Player View Preview</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowPreview(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Story Section */}
+              {hasStory && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  {data.story?.title && (
+                    <h2 style={{ color: 'var(--accent-gold)', marginBottom: '0.75rem', fontSize: '1.5rem' }}>
+                      {data.story.title}
+                    </h2>
+                  )}
+                  {data.location && (
+                    <div style={{ color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                      📍 {data.location}
+                    </div>
+                  )}
+                  {data.story?.text && (
+                    <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '0.75rem' }}>
+                      {data.story.text}
+                    </p>
+                  )}
+                  {data.story?.narrationText && (
+                    <p style={{ color: 'var(--accent-gold-dim)', fontStyle: 'italic', lineHeight: '1.6' }}>
+                      “{data.story.narrationText}”
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Start Node */}
+              {isStart && (
+                <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--bg-card)', borderRadius: 'var(--radius)' }}>
+                  <button className="btn btn-primary" disabled>
+                    Begin Mission
+                  </button>
+                </div>
+              )}
+
+              {/* Puzzle Node */}
+              {isPuzzle && (
+                <div>
+                  <h3 style={{ color: 'var(--accent-gold)', marginBottom: '1rem' }}>Puzzles:</h3>
+                  {puzzles.length === 0 && (
+                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No puzzles added yet</p>
+                  )}
+                  {puzzles.map((p, i) => (
+                    <div key={i} style={{ background: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                        Puzzle {i + 1} • {PUZZLE_TYPES.find(pt => pt.value === p.type)?.label || p.type}
+                      </div>
+                      {p.prompt && <p style={{ marginBottom: '0.75rem' }}>{p.prompt}</p>}
+                      {(p.type === 'choice' || p.type === 'debug_select') && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {(p.options || []).map((o, idx) => (
+                            <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                              {o.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {p.type === 'input_code' && (
+                        <input className="input" placeholder="Enter answer..." disabled />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Choice Node */}
+              {isChoice && (
+                <div>
+                  <h3 style={{ color: 'var(--accent-gold)', marginBottom: '1rem' }}>Choose your path:</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {(data.choices || []).map((c, idx) => (
+                      <div key={idx} style={{ padding: '1rem', background: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '2px solid var(--border)' }}>
+                        {c.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Endpoint Node */}
+              {isEndpoint && (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <h2 style={{ color: data.outcome === 'win' ? '#10b981' : '#ef4444', marginBottom: '1rem', fontSize: '2rem' }}>
+                    {data.outcome === 'win' ? '🏆 Victory!' : '☠️ Game Over'}
+                  </h2>
+                  {data.mediaUrl && (
+                    <img src={data.mediaUrl} alt="Outcome" style={{ maxWidth: '100%', borderRadius: 'var(--radius)', marginBottom: '1rem' }} />
+                  )}
+                </div>
+              )}
+
+              <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-dark)', borderRadius: 'var(--radius)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                💡 This is how players will see this node. Actual gameplay may include additional UI elements like meters, timers, and role-specific clues.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── common fields ── */}
@@ -266,12 +384,12 @@ export function PropertySidebar({
             <input className="input" value={data.story?.title || ''} onChange={e => setStoryField('title', e.target.value)} />
           </div>
           <div className="form-group">
-            <label className="label">Story Text</label>
-            <textarea className="input" rows={3} value={data.story?.text || ''} onChange={e => setStoryField('text', e.target.value)} />
+            <label className="label" title="Main text content shown to players - can be story elements, instructions, or context">Story Text ℹ️</label>
+            <textarea className="input" rows={3} placeholder="Main content players will read (e.g., story background, puzzle instructions)" value={data.story?.text || ''} onChange={e => setStoryField('text', e.target.value)} />
           </div>
           <div className="form-group">
-            <label className="label">Narration</label>
-            <textarea className="input" rows={2} value={data.story?.narrationText || ''} onChange={e => setStoryField('narrationText', e.target.value)} />
+            <label className="label" title="Optional voice-over style text - typically shorter, more atmospheric narration">Narration ℹ️</label>
+            <textarea className="input" rows={2} placeholder="Optional: atmospheric narration or game master voice (e.g., 'You hear footsteps approaching...')" value={data.story?.narrationText || ''} onChange={e => setStoryField('narrationText', e.target.value)} />
           </div>
         </>
       )}
